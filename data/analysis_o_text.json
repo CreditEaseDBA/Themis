@@ -1,0 +1,15 @@
+{
+    "module": "analysis",
+    "type": "TEXT",
+    "username": "schema",
+    "create_user": "SYSTEM",
+    "db_type": "O",
+    "sid": "cedb",
+    "rule_type": "TEXT",
+    "rule_status": "ON",
+    "hostname": "127.0.0.1",
+    "task_ip": "127.0.0.1",
+    "task_port": 1521,
+    "startdate": "2017-02-23",
+    "stopdate": "2017-02-23"
+}

@@ -1,0 +1,8 @@
+{
+    "module": "capture",
+    "type": "OBJ",
+    "db_type": "O",
+    "db_server": "127.0.0.1",
+    "db_port": 1521,
+    "capture_date": "2017-02-28"
+}

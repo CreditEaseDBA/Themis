@@ -1,0 +1,1 @@
+pt-query-digest --user=root --password=password --review h=127.0.0.1,D=slow_query_log,t=global_query_review --history h=127.0.0.1,D=slow_query_log,t=global_query_review_history --no-report --limit=0% --filter=" \$event->{Bytes} = length(\$event->{arg}) and \$event->{hostname}='127.0.0.1:3306' and \$event->{client}=\$event->{ip}" slow.log

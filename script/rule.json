@@ -1,0 +1,4566 @@
+{
+        
+        "db_type" : "O",
+        "exclude_obj_type" : "TABLE",
+        "input_parms" : [
+                {
+                        "parm_desc" : "索引个数",
+                        "parm_name" : "idx_count",
+                        "parm_value" : 3,
+                        "parm_unit" : ""
+                }
+        ],
+        "max_score" : 5,
+        "output_parms" : [
+                {
+                        "parm_name" : "table_name",
+                        "parm_desc" : "表名"
+                },
+                {
+                        "parm_desc" : "索引数",
+                        "parm_name" : "idx_count"
+                }
+        ],
+        "rule_complexity": "simple",
+        "rule_cmd": "SELECT T.TABLE_NAME, COUNT(1) FROM DBA_INDEXES T WHERE T.OWNER = '@username@' GROUP BY T.TABLE_NAME HAVING COUNT(1) > @idx_count@ ORDER BY COUNT(1) DESC",
+        "rule_desc" : "索引可以提高访问速度，但数量过多将导致空间消耗过大，且索引维护成本较高，影响DML效率等问题。应控制索引数量。",
+        "rule_name" : "SINGLETABLE_INDEX_NUM",
+        "rule_status" : "ON",
+        "rule_summary" : "索引数量过多",
+        "rule_type" : "OBJ",
+        "solution" : [
+                "构建战略性索引结构，不要针对每个需求都通过创建索引解决"
+        ],
+        "weight" : 0.5
+}
+{
+        
+        "db_type" : "O",
+        "exclude_obj_type" : "TABLE",
+        "input_parms" : [],
+        "max_score" : 10,
+        "output_parms" : [
+                {
+                        "parm_desc" : "表名",
+                        "parm_name" : "table_name"
+                }
+        ],
+        "rule_complexity": "simple",
+        "rule_cmd": "select table_name from dba_tables where owner = '@username@' and table_name not in(select table_name from dba_tab_cols where owner = '@username@' and (column_name like 'CREATE%' or column_name like 'UPDATE%') and data_type = 'DATE')",
+        "rule_desc" : "时间戳，是获取增量数据的一种方法。建议在表内增加创建时间、更新时间的时间戳字段。命名方式为CREATE_TIME、UPDATE_TIME。",
+        "rule_name" : "TIMESTAMP",
+        "rule_status" : "ON",
+        "rule_summary" : "不包含时间戳字段的表",
+        "rule_type" : "OBJ",
+        "solution" : [
+                "添加时间字段(比如插入、更新的时间戳)"
+        ],
+        "weight" : 1
+}
+{
+       
+        "db_type" : "O",
+        "exclude_obj_type" : "TABLE",
+        "input_parms" : [
+                {
+                        "parm_desc" : "记录定义长度与实际存储长度占比",
+                        "parm_name" : "data_len_ratio",
+                        "parm_unit" : "",
+                        "parm_value" : 0.5
+                }
+        ],
+        "max_score" : 5,
+        "output_parms" : [
+                {
+                        "parm_desc" : "表名称",
+                        "parm_name" : "table_name"
+                },
+                {
+                        "parm_desc" : "行记录定义字节数",
+                        "parm_name" : "data_length"
+                },
+                {
+                        "parm_desc" : "记录实际平均存放字节数",
+                        "parm_name" : "avg_col_len"
+                }
+        ],
+        "rule_cmd": "default",
+        "rule_complexity": "complex",
+        "rule_desc" : "记录定义长度与实际存储长度差异过大，请考虑字段类型定义是否合理，个别字段过长是否可分表存储。",
+        "rule_name" : "LONG_COLUMN_TAB",
+        "rule_status" : "ON",
+        "rule_summary" : "记录长度定义过长",
+        "rule_type" : "OBJ",
+        "solution" : [
+                "按需定义字段长度"
+        ],
+        "weight" : 0.5
+}
+{
+       
+        "db_type" : "O",
+        "exclude_obj_type" : "TABLE",
+        "input_parms" : [],
+        "max_score" : 10,
+        "output_parms" : [
+                {
+                        "parm_desc" : "表名称",
+                        "parm_name" : "table_name"
+                }
+        ],
+        "rule_complexity": "simple",
+        "rule_cmd": "select b.table_name from (select table_name from dba_constraints where owner ='@username@' and constraint_type = 'P')a right join (select table_name from dba_tables where owner = '@username@')b on a.table_name=b.table_name where a.table_name is null",
+        "rule_desc" : "主键是关系型数据库中唯一确定一条记录的依据，没有任何理由不定义主键。",
+        "rule_name" : "TABLE_MIS_PK",
+        "rule_status" : "ON",
+        "rule_summary" : "没有主键的表",
+        "rule_type" : "OBJ",
+        "solution" : [
+                "必须定义主键"
+        ],
+        "weight" : 1
+}
+{
+       
+        "db_type" : "O",
+        "exclude_obj_type" : "TABLE",
+        "input_parms" : [],
+        "max_score" : 10,
+        "output_parms" : [
+                {
+                        "parm_desc" : "表名称",
+                        "parm_name" : "table_name"
+                },
+                {
+                        "parm_desc" : "字段名",
+                        "parm_name" : "column_name"
+                }
+        ],
+        "rule_complexity": "simple",
+        "rule_cmd": "with tc as (select table_name, column_name from dba_cons_columns where constraint_name in (select constraint_name from dba_constraints where owner = '@username@' and constraint_type = 'R')  and owner = '@username@') select table_name, column_name  from tc  where (table_name, column_name) not in (select table_name, column_name  from tc intersect   select table_name, column_name from dba_ind_columns  where index_owner = '@username@')",
+        "rule_desc" : "外键没有索引会导致主子表关联查询时，关联效率很低。",
+        "rule_name" : "TABLE_FK_NOIND",
+        "rule_status" : "ON",
+        "rule_summary" : "外键没有索引的表",
+        "rule_type" : "OBJ",
+        "solution" : [
+                "1.在应用端实现外键约束",
+                "2.无法去除外键，必须添加外键索引"
+        ],
+        "weight" : 1
+}
+{
+       
+        "db_type" : "O",
+        "exclude_obj_type" : "TABLE",
+        "input_parms" : [
+                {
+                        "parm_desc" : "记录数",
+                        "parm_name" : "record_count",
+                        "parm_value" : 10000000,
+                        "parm_unit" : ""
+                }
+        ],
+        "max_score" : 3,
+        "output_parms" : [
+                {
+                        "parm_name" : "table_name",
+                        "parm_desc" : "表名称"
+                },
+                {
+                        "parm_desc" : "数据量",
+                        "parm_name" : "record_count"
+                }
+        ],
+        "rule_complexity": "simple",
+        "rule_cmd": "select t.table_name,t.num_rows from DBA_TABLES t  where t.partitioned='NO' and t.owner='@username@' and t.num_rows>@record_count@ union select t.table_name||':'||t.PARTITION_NAME,t.num_rows  from  dba_tab_PARTITIONS t  where t.table_owner='@username@' and t.num_rows>@record_count@",
+        "rule_desc" : "控制单个表或单个分区的数据规模，提高单一对象的访问效率。如记录数过多，应考虑分库、分表、分区等策略。",
+        "rule_name" : "COUNT_RECORD_TAB",
+        "rule_status" : "ON",
+        "rule_summary" : "单表或单分区记录数量过大",
+        "rule_type" : "OBJ",
+        "solution" : [
+                "1.建议分库，分表，分区",
+                "2.历史数据归档"
+        ],
+        "weight" : 0.5
+}
+{
+        
+        "db_type" : "O",
+        "exclude_obj_type" : "TABLE",
+        "input_parms" : [
+                {
+                        "parm_desc" : "表大小",
+                        "parm_name" : "tab_phy_size",
+                        "parm_value" : 2,
+                        "parm_unit" : "GB"
+                }
+        ],
+        "max_score" : 10,
+        "output_parms" : [
+                {
+                        "parm_desc" : "表名称",
+                        "parm_name" : "table_name"
+                },
+                {
+                        "parm_desc" : "表大小",
+                        "parm_name" : "tab_phy_size"
+                }
+        ],
+        "rule_complexity": "simple",
+        "rule_cmd": "select * from (select segment_name as table_name,round(sum(bytes) / 1024 / 1024 / 1024, 2) as tab_phy_size from dba_segments where segment_type = 'TABLE' and owner = '@username@'  and segment_name not like 'BIN$%'  group by segment_name) a  where tab_phy_size > @tab_phy_size@",
+        "rule_desc" : "表的规模过大，将影响表的访问效率、增加维护成本等。常见的解决方案就是使用分区表，将大表转换为分区表。",
+        "rule_name" : "BIG_TABLE",
+        "rule_status" : "ON",
+        "rule_summary" : "超过指定规模且没有分区的表",
+        "rule_type" : "OBJ",
+        "solution" : [
+                "1.建议分库，分表，分区",
+                "2.历史数据归档"
+        ],
+        "weight" : 1
+}
+{
+        
+        "db_type" : "O",
+        "exclude_obj_type" : "TABLE",
+        "input_parms" : [
+                {
+                        "parm_desc" : "字段数",
+                        "parm_name" : "column_count",
+                        "parm_unit" : "",
+                        "parm_value" : 30
+                }
+        ],
+        "max_score" : 10,
+        "output_parms" : [
+                {
+                        "parm_desc" : "表名称",
+                        "parm_name" : "table_name"
+                },
+                {
+                        "parm_desc" : "字段数",
+                        "parm_name" : "column_count"
+                }
+        ],
+        "rule_complexity": "simple",
+        "rule_cmd": "select table_name, count(1)   from dba_tab_cols   where owner = '@username@'   group by table_name  having count(1) > @column_count@",
+        "rule_desc" : "字段过多，会导致记录长度过大。单个数据存储单元将保存的记录数过少，影响访问效率。",
+        "rule_name" : "TABLE_COL_NUM",
+        "rule_status" : "ON",
+        "rule_summary" : "大于阀值数量字段的表",
+        "rule_type" : "OBJ",
+        "solution" : [
+                "表设计时尽量符合三范式来避免数据冗余,使用频率低的字段拆到另外一张表，必要时做表关联取数"
+        ],
+        "weight" : 0.5
+}
+{
+       
+        "db_type" : "O",
+        "exclude_obj_type" : "TABLE",
+        "input_parms" : [],
+        "max_score" : 3,
+        "output_parms" : [
+                {
+                        "parm_desc" : "表名称",
+                        "parm_name" : "table_name"
+                },
+                {
+                        "parm_desc" : "字段名",
+                        "parm_name" : "column_name"
+                }
+        ],
+        "rule_complexity": "simple",
+        "rule_cmd": "select table_name,column_name from dba_lobs where owner='@username@'",
+        "rule_desc" : "大对象字段是关系型数据库中应尽量避免的。如有需要，可考虑在外部进行存储。",
+        "rule_name" : "TABLE_LOB",
+        "rule_status" : "ON",
+        "rule_summary" : "包含有大字段类型的表",
+        "rule_type" : "OBJ",
+        "solution" : [
+                "建议在数据库外部进行存储大字段"
+        ],
+        "weight" : 0.3
+}
+{
+       
+        "db_type" : "O",
+        "exclude_obj_type" : "TABLE",
+        "input_parms" : [],
+        "max_score" : 10,
+        "output_parms" : [
+                {
+                        "parm_name" : "table_name",
+                        "parm_desc" : "表名"
+                },
+                {
+                        "parm_desc" : "表类型",
+                        "parm_name" : "table_type"
+                },
+                {
+                        "parm_desc" : "并行度",
+                        "parm_name" : "parallel_count"
+                }
+        ],
+        "rule_complexity": "simple",
+        "rule_cmd": "select t.table_name, decode(t.partitioned, 'YES', 'PART',  decode(t.temporary, 'Y', 'TEMP', decode (t.iot_type,'IOT','IOT','NORMAL'))) table_type, t.degree from dba_tables t  where t.table_name not like 'BIN%'  and t.owner = '@username@' and t.degree > 1 order by table_type,table_name",
+        "rule_desc" : "此规则会获取被审核用户下所有表对象的并行度。",
+        "rule_name" : "TAB_PARALLEL_ON",
+        "rule_status" : "ON",
+        "rule_summary" : "表对象是否开启并行访问",
+        "rule_type" : "OBJ",
+        "solution" : [
+                "关闭表的并行度alter table TABLENAME noparallel"
+        ],
+        "weight" : 0.5
+}
+{
+       
+        "db_type" : "O",
+        "exclude_obj_type" : "TABLE",
+        "input_parms" : [],
+        "max_score" : 10,
+        "output_parms" : [
+                {
+                        "parm_desc" : "表名",
+                        "parm_name" : "table_name"
+                },
+                {
+                        "parm_desc" : "约束名",
+                        "parm_name" : "constraint_name"
+                },
+                {
+                        "parm_name" : "列名",
+                        "parm_desc" : "column_name"
+                },
+                {
+                        "parm_desc" : "关联表",
+                        "parm_name" : "rel_tab_name"
+                },
+                {
+                        "parm_desc" : "关联约束名",
+                        "parm_name" : "rel_con_name"
+                }
+        ],
+        "rule_complexity": "simple",
+        "rule_cmd": "select c.table_name,  c.constraint_name,  t.column_name, (select distinct a.table_name  from dba_constraints a  where a.constraint_name = c.r_constraint_name) r_table_name, c.r_constraint_name   from dba_constraints c, dba_cons_columns t  where t.owner = c.owner  and t.constraint_name = c.constraint_name and c.owner = '@username@'   and c.table_name not like 'BIN$%'  and c.constraint_type = 'R'",
+        "rule_desc" : "此规则获取表中存在外键约束",
+        "rule_name" : "TAB_EXISTS_FK",
+        "rule_status" : "ON",
+        "rule_summary" : "表中存在外键约束",
+        "rule_type" : "OBJ",
+        "solution" : [
+                "应用程序实现外键约束，不建议在数据库里面使用外键约束"
+        ],
+        "weight" : 0.5
+}
+{
+        
+        "db_type" : "O",
+        "exclude_obj_type" : "TABLE",
+        "input_parms" : [
+                {
+                        "parm_desc" : "大表数量占所有表数量的比率",
+                        "parm_name" : "tab_phy_size",
+                        "parm_unit" : "MB",
+                        "parm_value" : 2048
+                }
+        ],
+        "max_score" : 10,
+        "output_parms" : [
+                {
+                        "parm_name" : "big_tab_count",
+                        "parm_desc" : "大表数量"
+                },
+                {
+                        "parm_desc" : "所有表数量",
+                        "parm_name" : "table_count"
+                },
+                {
+                        "parm_desc" : "比率",
+                        "parm_name" : "big_tab_ratio"
+                }
+        ],
+        "rule_cmd": "default",
+        "rule_complexity": "complex",   
+        "rule_desc" : "此规则会获取被审核用户下，超过指定物理大小的表名",
+        "rule_name" : "BIG_TABLE_COUNT",
+        "rule_status" : "ON",
+        "rule_summary" : "大表数量",
+        "rule_type" : "OBJ",
+        "solution" : [
+                "1.建议分库，分表，分区",
+                "2.历史数据归档"
+        ],
+        "weight" : 0.25
+}
+{
+
+        "db_type" : "O",
+        "exclude_obj_type" : "INDEX",
+        "input_parms" : [
+                {
+                        "parm_desc" : "组合索引百分比",
+                        "parm_name" : "com_idx_percent",
+                        "parm_unit" : "",
+                        "parm_value" : 30
+                }
+        ],
+        "max_score" : 3,
+        "output_parms" : [
+                {
+                        "parm_desc" : "表名",
+                        "parm_name" : "table_name"
+                },
+                {
+                        "parm_desc" : "索引名",
+                        "parm_name" : "index_name"
+                },
+                {
+                        "parm_name" : "column_name",
+                        "parm_desc" : "列名"
+                },
+                {
+                        "parm_desc" : "列顺序",
+                        "parm_name" : "col_position"
+                }
+        ],
+        "rule_cmd": "default",
+        "rule_complexity": "complex",
+        "rule_desc" : "组合索引过多，将导致空间消耗较大、索引维护成本较高。应考虑构建战略性索引结构，不要针对每个需求都通过创建索引解决。",
+        "rule_name" : "COMBINED_INDEX_PERCENT",
+        "rule_status" : "ON",
+        "rule_summary" : "组合索引数量过多或没有索引",
+        "rule_type" : "OBJ",
+        "solution" : [
+                "1.构建战略性索引结构,不要针对每个需求都通过创建索引解决",
+                "2.注意列在所有的顺序"
+        ],
+        "weight" : 0.1
+}
+{
+       
+        "db_type" : "O",
+        "exclude_obj_type" : "INDEX",
+        "input_parms" : [],
+        "max_score" : 5,
+        "output_parms" : [
+                {
+                        "parm_desc" : "索引名",
+                        "parm_name" : "index_name"
+                },
+                {
+                        "parm_desc" : "表名",
+                        "parm_name" : "table_name"
+                }
+        ],
+        "rule_complexity": "simple",
+        "rule_cmd": "SELECT T.TABLE_NAME, T.INDEX_NAME  FROM DBA_INDEXES T  WHERE T.OWNER = '@username@' AND NOT EXISTS  (SELECT 1  FROM V$SQL_PLAN S  WHERE S.OBJECT_NAME = T.INDEX_NAME  AND S.OBJECT_OWNER = '@username@')  INTERSECT  SELECT T.TABLE_NAME, T.INDEX_NAME  FROM DBA_INDEXES T  WHERE T.OWNER = '@l_username'  AND NOT EXISTS   (SELECT 1   FROM DBA_HIST_SQL_PLAN P   WHERE P.OBJECT_NAME = T.INDEX_NAME  AND P.OBJECT_OWNER = '@username@')",
+        "rule_desc" : "在数据库一段时间内，该索引没有被任何SQL语句使用。请评估此索引的有效性。",
+        "rule_name" : "INVALID_INDEX",
+        "rule_status" : "ON",
+        "rule_summary" : "存在7天内没有使用的索引",
+        "rule_type" : "OBJ",
+        "solution" : [
+                "根据业务特点，有目的的添加相关索引"
+        ],
+        "weight" : 1
+}
+{
+        
+        "db_type" : "O",
+        "exclude_obj_type" : "INDEX",
+        "input_parms" : [],
+        "max_score" : 10,
+        "output_parms" : [
+                {
+                        "parm_desc" : "索引名",
+                        "parm_name" : "index_name"
+                },
+                {
+                        "parm_desc" : "索引类型",
+                        "parm_name" : "index_type"
+                },
+                {
+                        "parm_desc" : "并行度",
+                        "parm_name" : "parallel_count"
+                },
+                {
+                        "parm_desc" : "表名",
+                        "parm_name" : "table_name"
+                }
+        ],
+        "rule_complexity": "simple",
+        "rule_cmd": "select index_name, type, degree, table_name  from (select distinct t.INDEX_NAME,  decode(INDEX_TYPE,  'NORMAL',  'B-tree',  decode(index_type,  'BITMAP',  'BitMap',  decode(INDEX_TYPE,  'FUNCTION-BASED NORMAL', 'Func',  decode(table_type,  'IOT',  'IOT',  decode(index_type,  'LOB',  'Lob'))))) as type,t.TABLE_NAME,  t.degree   from dba_indexes t  where t.index_name not like 'BIN%'  and t.owner = '@username@'  and t.degree > 1  order by t.table_name, t.index_name)",
+        "rule_desc" : "此规则会获取被审核用户下所有索引对象的并行度。",
+        "rule_name" : "IDX_PARALLEL_ON",
+        "rule_status" : "ON",
+        "rule_summary" : "索引对象是否开启并行访问",
+        "rule_type" : "OBJ",
+        "solution" : [
+                "关闭索引并行度alter index INDEXNAME noparallel;"
+        ],
+        "weight" : 0.5
+}
+{
+        
+        "db_type" : "O",
+        "exclude_obj_type" : "INDEX",
+        "input_parms" : [
+                {
+                        "parm_name" : "idx_level",
+                        "parm_value" : 3,
+                        "parm_unit" : "",
+                        "parm_desc" : "索引高度"
+                }
+        ],
+        "max_score" : 10,
+        "output_parms" : [
+                {
+                        "parm_desc" : "索引名",
+                        "parm_name" : "index_name"
+                },
+                {
+                        "parm_desc" : "索引类型",
+                        "parm_name" : "index_type"
+                },
+                {
+                        "parm_desc" : "索引高度",
+                        "parm_name" : "index_level"
+                },
+                {
+                        "parm_name" : "table_name",
+                        "parm_desc" : "表名"
+                }
+        ],
+        "rule_complexity": "simple",
+        "rule_cmd": "select index_name, type, idx_blevel, table_name from (select distinct t.INDEX_NAME,decode(INDEX_TYPE,'NORMAL','B-tree',decode(index_type,'BITMAP','BitMap',decode(INDEX_TYPE,'FUNCTION-BASED NORMAL','Func',decode(table_type,'IOT','IOT',decode(index_type,'LOB','Lob'))))) as type, t.TABLE_NAME,t.blevel as idx_blevel from dba_indexes t   where t.index_name not like 'BIN%'  and t.owner = '@username@' and t.blevel > @idx_level@  order by t.table_name, t.index_name)",
+        "rule_desc" : "此规则会获取被审核用户下所有索引对象的高度。",
+        "rule_name" : "IDX_BLEVEL",
+        "rule_status" : "ON",
+        "rule_summary" : "索引对象高度",
+        "rule_type" : "OBJ",
+        "solution" : [
+                "1.重构表的字段或索引",
+                "2.重建索引"
+        ],
+        "weight" : 0.5
+}
+{
+      
+        "db_type" : "O",
+        "exclude_obj_type" : "INDEX",
+        "input_parms" : [
+                {
+                        "parm_desc" : "聚簇因子与表记录数比率",
+                        "parm_name" : "cluster_row_ratio",
+                        "parm_unit" : "",
+                        "parm_value" : 3
+                }
+        ],
+        "max_score" : 10,
+        "output_parms" : [
+                {
+                        "parm_desc" : "索引名",
+                        "parm_name" : "index_name"
+                },
+                {
+                        "parm_desc" : "索引类型",
+                        "parm_name" : "index_type"
+                },
+                {
+                        "parm_name" : "idx_clustering_factor",
+                        "parm_desc" : "聚簇因子"
+                },
+                {
+                        "parm_desc" : "表名",
+                        "parm_name" : "table_name"
+                },
+                {
+                        "parm_desc" : "表记录数",
+                        "parm_name" : "row_num"
+                },
+                {
+                        "parm_desc" : "比率",
+                        "parm_name" : "cluster_row_ratio"
+                }
+        ],
+        "rule_complexity": "simple",
+        "rule_cmd": "select * from (select index_name,type,CLUSTERING_FACTOR,table_name,NUM_ROWS,ceil(NUM_ROWS / CLUSTERING_FACTOR) as ratio from (select distinct t.INDEX_NAME,t.OWNER,decode(INDEX_TYPE,'NORMAL','B-tree',decode(index_type,'BITMAP','BitMap',decode(INDEX_TYPE,'FUNCTION-BASED NORMAL', 'Func',decode(table_type,'IOT','IOT',decode(index_type,'LOB','Lob'))))) as type,t.TABLE_NAME,decode(t.CLUSTERING_FACTOR,0,1,decode(t.clustering_factor,'',1,t.clustering_factor)) as CLUSTERING_FACTOR, u.NUM_ROWS from dba_indexes t, dba_tables u where u.table_name = t.table_name and t.OWNER = u.OWNER and t.index_name not like 'BIN%' and t.owner = '@username@' order by t.table_name, t.index_name)) where ratio >@cluster_row_ratio@",
+        "rule_desc" : "此规则会获取被审核用户下所有索引对象的聚簇因子情况。",
+        "rule_name" : "IDX_CLUSTERING_FACTOR",
+        "rule_status" : "ON",
+        "rule_summary" : "索引的聚簇因子",
+        "rule_type" : "OBJ",
+        "solution" : [
+                "1.重新定义表的字段类型",
+                "2.表数据重新存储"
+        ],
+        "weight" : 0.5
+}
+{
+        "db_type" : "O",
+        "exclude_obj_type" : "SEQUENCE",
+        "input_parms" : [
+                {
+                        "parm_desc" : "缓存大小",
+                        "parm_name" : "cache_size",
+                        "parm_unit" : "",
+                        "parm_value" : 20
+                }
+        ],
+        "max_score" : 3,
+        "method" : "1.创建索引",
+        "output_parms" : [
+                {
+                        "parm_desc" : "序列名称",
+                        "parm_name" : "seq_name"
+                },
+                {
+                        "parm_desc" : "缓存大小",
+                        "parm_name" : "seq_cache_size"
+                }
+        ],
+        "rule_complexity": "simple",
+        "rule_cmd": "select SEQUENCE_NAME, CACHE_SIZE from dba_sequences WHERE SEQUENCE_OWNER = '@username@' AND CACHE_SIZE < @cache_size@",
+        "rule_desc" : "系统默认会缓存20，如过小将导致频繁查询数据字典，影响并发能力。",
+        "rule_name" : "SEQ_CACHESIZE",
+        "rule_status" : "ON",
+        "rule_summary" : "缓存过小的序列",
+        "rule_type" : "OBJ",
+        "solution" : [
+                "调整cache缓存大小,alter sequence sequence_name cache 20;"
+        ],
+        "weight" : 1
+}
+{        
+        "db_type" : "O",
+        "exclude_obj_type" : "FUNCTION",
+        "input_parms" : [],
+        "max_score" : 3,
+        "output_parms" : [
+                {
+                        "parm_desc" : "函数名称",
+                        "parm_name" : "func_name"
+                },
+                {
+                        "parm_desc" : "类型",
+                        "parm_name" : "obj_type"
+                }
+        ],
+        "rule_complexity": "simple",
+        "rule_cmd": "select object_name, object_type from dba_procedures where object_type = 'FUNCTION' and owner = '@username@' order by object_type",
+        "rule_desc" : "函数，将影响数据库的异构迁移能力，并存在代码维护性较差等原因。",
+        "rule_name" : "USE_FUNCTION",
+        "rule_status" : "ON",
+        "rule_summary" : "存在函数",
+        "rule_type" : "OBJ",
+        "solution" : [
+                "用应用端程序实现将函数"
+        ],
+        "weight" : 3
+}
+{
+       
+        "db_type" : "O",
+        "exclude_obj_type" : "PROCEDURE",
+        "input_parms" : [],
+        "max_score" : 3,
+        "output_parms" : [
+                {
+                        "parm_desc" : "存储过程名称",
+                        "parm_name" : "proc_name"
+                },
+                {
+                        "parm_desc" : "类型",
+                        "parm_name" : "obj_type"
+                }
+        ],
+        "rule_complexity": "simple",
+        "rule_cmd": "select object_name, object_type from dba_procedures where object_type = 'PROCEDURE' and owner = '@username@' order by object_type",
+        "rule_desc" : "存储过程，将影响数据库的异构迁移能力，并存在代码维护性较差等原因。",
+        "rule_name" : "USE_PROCEDURE",
+        "rule_status" : "ON",
+        "rule_summary" : "存在存储过程",
+        "rule_type" : "OBJ",
+        "solution" : [
+                "用应用端程序实现将存储过程"
+        ],
+        "weight" : 3
+}
+{
+      
+        "db_type" : "O",
+        "exclude_obj_type" : "COLUMN",
+        "input_parms" : [
+                {
+                        "parm_name" : "sample_threshold",
+                        "parm_value" : 10000,
+                        "parm_unit" : "",
+                        "parm_desc" : "是否采样阈值(记录数)"
+                },
+                {
+                        "parm_value" : 20,
+                        "parm_unit" : "",
+                        "parm_desc" : "非重复值阈值(排查枚举)",
+                        "parm_name" : "unrepeat_threshold"
+                },
+                {
+                        "parm_desc" : "返回记录数上限",
+                        "parm_name" : "return_num",
+                        "parm_unit" : "",
+                        "parm_value" : 200
+                }
+        ],
+        "max_score" : 10,
+        "output_parms" : [
+                {
+                        "parm_name" : "table_name",
+                        "parm_desc" : "表名称"
+                },
+                {
+                        "parm_desc" : "表字段名",
+                        "parm_name" : "column_name"
+                },
+                {
+                        "parm_desc" : "字段定义类型",
+                        "parm_name" : "column_type_define"
+                },
+                {
+                        "parm_name" : "column_type_real",
+                        "parm_desc" : "字段实际类型"
+                }
+        ],
+        "rule_cmd": "default",
+        "rule_complexity": "complex",
+        "rule_desc" : "此规则会抽样部分数据，分析其定义类型与存储类型是否相符。常见问题如用数字、文本保存日期等。",
+        "rule_name" : "COL_WRONG_TYPE",
+        "rule_status" : "ON",
+        "rule_summary" : "表字段类型不匹配",
+        "rule_type" : "OBJ",
+        "solution" : [
+                "合理定义字段类型"
+        ],
+        "weight" : 0.5
+}
+{
+        
+        "db_type" : "O",
+        "exclude_obj_type" : "COLUMN",
+         "input_parms" : [],
+        "max_score" : 3,
+        "output_parms" : [
+                {
+                        "parm_desc" : "表名",
+                        "parm_name" : "table_name"
+                },
+                {
+                        "parm_name" : "column_name",
+                        "parm_desc" : "字段名"
+                },
+                {
+                        "parm_desc" : "重复次数",
+                        "parm_name" : "repeat_times"
+                }
+        ],
+        "rule_complexity": "simple",
+        "rule_cmd": "SELECT T.COLUMN_NAME, T.TABLE_NAME, COUNT(T.INDEX_NAME) FROM DBA_IND_COLUMNS T WHERE T.INDEX_OWNER = '@username@' GROUP BY T.TABLE_NAME, T.COLUMN_NAME HAVING COUNT(T.INDEX_NAME) > 1",
+        "rule_desc" : "一个字段被多个索引引用，请考虑构建策略。删除不必要的索引。",
+        "rule_name" : "DUPLICATE_INDEX",
+        "rule_status" : "ON",
+        "rule_summary" : "字段重复索引",
+        "rule_type" : "OBJ",
+        "solution" : [
+                "删除不必要的索引"
+        ],
+        "weight" : 0.3
+}
+{
+     
+        "db_type" : "O",
+        "exclude_obj_type" : "PART_TABLE",
+        "input_parms" : [
+                {
+                        "parm_desc" : "分区表个数",
+                        "parm_name" : "part_tab_num",
+                        "parm_unit" : "",
+                        "parm_value" : 10
+                }
+        ],
+        "max_score" : 5,
+        "output_parms" : [
+                {
+                        "parm_desc" : "表名称",
+                        "parm_name" : "table_name"
+                },
+                {
+                        "parm_desc" : "表类型",
+                        "parm_name" : "table_type"
+                }
+        ],
+        "rule_complexity": "simple",
+        "rule_cmd": "select distinct s.table_name, 'PART_TABLE' as table_type from dba_tab_partitions s, (select t.owner owner, count(1) from DBA_TABles t where t.partitioned = 'YES'  and t.owner = '@username@' and t.table_name not like 'BIN$%' group by t.owner having count(1) > @part_tab_num@ ) a where s.table_owner = a.owner and s.table_name not like 'BIN$%'",
+        "rule_desc" : "分区表过多，常见原因是大表较多。因根据需求，考虑进行垂直拆分，减小单库规模。",
+        "rule_name" : "COUNT_SUMPART_FULL_TAB",
+        "rule_status" : "ON",
+        "rule_summary" : "分区表数量过多",
+        "rule_type" : "OBJ",
+        "solution" : [
+                "1.重新合理定义分区键",
+                "2.垂直拆分，减少单库规模"
+        ],
+        "weight" : 1
+}
+{
+        "db_type" : "O",
+        "exclude_obj_type" : "PART_TABLE",
+        "input_parms" : [
+                {
+                        "parm_desc" : "复合分区个数",
+                        "parm_name" : "subpart_tab_num",
+                        "parm_value" : 200,
+                        "parm_unit" : ""
+                }
+        ],
+        "max_score" : 3,
+        "output_parms" : [
+                {
+                        "parm_desc" : "表名",
+                        "parm_name" : "table_name"
+                },
+                {
+                        "parm_name" : "title2",
+                        "parm_desc" : "part_name"
+                },
+                {
+                        "parm_desc" : "子分区数量",
+                        "parm_name" : "subpart_count"
+                }
+        ],
+        "rule_complexity": "simple",
+        "rule_cmd": "select t.table_name, t.partition_name, count(1) from DBA_TAB_SUBPARTITIONS t  where t.table_owner = '@username@' group by t.table_name, t.partition_name having count(1) >= @subpart_tab_num@",
+        "rule_desc" : "同上面分区表数量过多的理由类似。",
+        "rule_name" : "COUNT_SUBPART_TAB",
+        "rule_status" : "ON",
+        "rule_summary" : "复合分区数量过多",
+        "rule_type" : "OBJ",
+        "solution" : [
+                "重新合理定义分区键"
+        ],
+        "weight" : 0.5
+}
+{
+       
+        "db_type" : "O",
+        "exclude_obj_type" : "PART_TABLE",
+        "input_parms" : [
+                {
+                        "parm_value" : 200,
+                        "parm_desc" : "分区个数",
+                        "parm_name" : "part_tab_num",
+                        "parm_unit" : ""
+                }
+        ],
+        "max_score" : 3,
+        "output_parms" : [
+                {
+                        "parm_desc" : "表名称",
+                        "parm_name" : "table_name"
+                },
+                {
+                        "parm_desc" : "分区数量",
+                        "parm_name" : "part_tab_num"
+                }
+        ],
+        "rule_complexity": "simple",
+        "rule_cmd": "select t.table_name, count(1)  from DBA_TAB_PARTITIONS t where t.table_owner = '@username@' group by t.table_name having count(1) >= @part_tab_num@",
+        "rule_desc" : "分区表中分区数量过多，将导致整体维护成本过高，可调整分区粒度。",
+        "rule_name" : "COUNT_SUMPART_SINGLE_TAB",
+        "rule_status" : "ON",
+        "rule_summary" : "分区数量过多",
+        "rule_type" : "OBJ",
+        "solution" : [
+                "1.合理定义分区键",
+                "2.历史数据归档"
+        ],
+        "weight" : 0.5
+}
+{       
+        "db_type" : "O",
+        "exclude_obj_type" : "DBLINK",
+         "input_parms" : [],
+        "max_score" : 10,
+        "output_parms" : [
+                {
+                        "parm_desc" : "dblink名字",
+                        "parm_name" : "dblink_name"
+                },
+                {
+                        "parm_name" : "username",
+                        "parm_desc" : "访问的用户"
+                },
+                {
+                        "parm_desc" : "访问的主机",
+                        "parm_name" : "hostname"
+                }
+        ],
+        "rule_complexity": "simple",
+        "rule_cmd": "select db_link, username, host from dba_db_links where owner = '@username@'",
+        "rule_desc" : "不建议在一个数据库中访问其他数据库，请考虑在应用端解决。",
+        "rule_name" : "DBLINKS_NUM",
+        "rule_status" : "ON",
+        "rule_summary" : "存在DBLINK",
+        "rule_type" : "OBJ",
+        "solution" : [
+                "禁用dblink,在应用程序端连接多个数据库操作"
+        ],
+        "weight" : 10
+}
+{
+       
+        "db_type" : "O",
+        "exclude_obj_type" : "F_INDEX",
+         "input_parms" : [],
+        "max_score" : 10,
+        "output_parms" : [
+                {
+                        "parm_desc" : "索引名",
+                        "parm_name" : "index_name"
+                },
+                {
+                        "parm_desc" : "索引类型",
+                        "parm_name" : "index_type"
+                },
+                {
+                        "parm_name" : "table_name",
+                        "parm_desc" : "表名"
+                },
+                {
+                        "parm_desc" : "索引描述",
+                        "parm_name" : "index_describe"
+                }
+        ],
+        "rule_complexity": "simple",
+        "rule_cmd": "select t.INDEX_NAME, t.INDEX_TYPE, t.TABLE_NAME, s.COLUMN_EXPRESSION from dba_indexes t, dba_ind_expressions s where t.index_name = s.index_name and t.table_name = s.TABLE_name  and t.index_name not like 'BIN%'  and t.owner = '@username@' and t.index_type like '%FUNCTION%' order by t.table_name, t.index_name",
+        "rule_desc" : "此规则会获取被审核用户下所有索引的类型，并判断是否为函数索引。",
+        "rule_name" : "IDX_FUNC",
+        "rule_status" : "ON",
+        "rule_summary" : "是否使用函数索引",
+        "rule_type" : "OBJ",
+        "solution" : [
+                "1.函数在表达式右侧实现",
+                "2.应用程序替换数据库函数"
+        ],
+        "weight" : 0.5
+}
+{
+
+        "db_type" : "O",
+        "exclude_obj_type" : "B_INDEX",
+        "input_parms" : [],
+        "max_score" : 10,
+        "output_parms" : [
+                {
+                        "parm_desc" : "索引名",
+                        "parm_name" : "index_name"
+                },
+                {
+                        "parm_name" : "index_type",
+                        "parm_desc" : "索引类型"
+                },
+                {
+                        "parm_desc" : "表名",
+                        "parm_name" : "table_name"
+                },
+                {
+                        "parm_desc" : "索引列",
+                        "parm_name" : "idx_col_name"
+                }
+        ],
+        "rule_complexity": "simple",
+        "rule_cmd": "select t.INDEX_NAME, t.INDEX_TYPE, t.TABLE_NAME, s.column_name from dba_indexes t, dba_ind_columns s where t.owner = s.table_owner and t.index_name = s.index_name and t.index_name not like 'BIN%' and t.owner = '@username@' and t.index_type = 'BITMAP' order by t.table_name, t.index_name",
+        "rule_desc" : "此规则会获取被审核用户下所有索引的类型，并判断是否为位图索引。若表对象有频繁的DML操作，位图索引会在一定程度上阻塞相关操作。",
+        "rule_name" : "IDX_BITMAP",
+        "rule_status" : "ON",
+        "rule_summary" : "是否使用位图索引",
+        "rule_type" : "OBJ",
+        "solution" : [
+                "OLTP在线交易系统禁用位图索引"
+        ],
+        "weight" : 0.5
+}
+{
+        
+        "db_type" : "O",
+        "exclude_obj_type" : "GLOBAL_INDEX",
+        "input_parms" : [],
+        "max_score" : 3,
+        "output_parms" : [
+                {
+                        "parm_desc" : "索引名",
+                        "parm_name" : "index_name"
+                },
+                {
+                        "parm_desc" : "表名称",
+                        "parm_name" : "table_name"
+                }
+        ],
+        "rule_complexity": "simple",
+        "rule_cmd": "SELECT INDEX_NAME, TABLE_NAME FROM DBA_PART_INDEXES X WHERE X.OWNER = '@username@' AND X.LOCALITY = 'GLOBAL'",
+        "rule_desc" : "全局分区索引，存在维护成本较高问题。当分区发生变化是，需要维护全局索引的有效性。",
+        "rule_name" : "GLOBAL_PART_INDEX",
+        "rule_status" : "ON",
+        "rule_summary" : "存在全局分区索引",
+        "rule_type" : "OBJ",
+        "solution" : [
+                "改造本地分区索引"
+        ],
+        "weight" : 0.3
+}
+{
+
+        "db_type" : "O",
+        "exclude_obj_type" : "TRIGGER",
+        "input_parms" : [],
+        "max_score" : 5,
+        "output_parms" : [
+                {
+                        "parm_name" : "trigger_name",
+                        "parm_desc" : "触发器名称"
+                },
+                {
+                        "parm_desc" : "类型",
+                        "parm_name" : "obj_type"
+                }
+        ],
+        "rule_complexity": "simple",
+        "rule_cmd": "select trigger_name, 'TRIGGER' as type from dba_triggers where owner = '@username@'",
+        "rule_desc" : "触发器，将影响数据库的异构迁移能力。如有数据一致性维护需求，请从应用端给予考虑。",
+        "rule_name" : "TRIGGERS_NUM",
+        "rule_status" : "ON",
+        "rule_summary" : "存在触发器",
+        "rule_type" : "OBJ",
+        "solution" : [
+                "在应用端实现触发器功能"
+        ],
+        "weight" : 5
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 10.0,
+    "output_parms" : [ 
+        {
+            "parm_desc" : "CHECKSUM",
+            "parm_name" : "CHECKSUM"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "ts_cnt"
+        }, 
+        {
+            "parm_desc" : "平均执行时间",
+            "parm_name" : "query_time_avg"
+        }, 
+        {
+            "parm_desc" : "平均返回记录数",
+            "parm_name" : "rows_sent_avg"
+        }, 
+        {
+            "parm_desc" : "扫描命中率",
+            "parm_name" : "index_ratio"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd" : "db.planitem.find({\"schemas\":\"@schema_name@\",\"item_type\" : \"materialized_from_subquery\"}).forEach(function(x){db.sqlinfo.find({checksum:x.checksum}).forEach(function(y){db.@tmp@.save({\"checksum\" :y.checksum,\"ts_cnt\" :y.ts_cnt,\"query_time_avg\" :y.query_time_avg,\"rows_sent_avg\" :y.rows_sent_avg,\"index_ratio\" :y.index_ratio})})})",
+    "rule_desc" : "materialized_from_subquery",
+    "rule_name" : "MATERIALIZED_FROM_SUBQUERY",
+    "rule_status" : "ON",
+    "rule_summary" : "",
+    "rule_type" : "SQLPLAN",
+    "solution" : [ 
+        "1.使用连接查询", 
+        "2.避免大的结果集"
+    ],
+    "weight" : 0.1
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : [ 
+        "SQL_ID", 
+        "PLAN_HASH_VALUE"
+    ],
+    "input_parms" : [ 
+        {
+            "parm_desc" : "表物理大小",
+            "parm_name" : "table_phy_size",
+            "parm_unit" : "MB",
+            "parm_value" : 2048
+        }, 
+        {
+            "parm_desc" : "表行数",
+            "parm_name" : "table_row_num",
+            "parm_unit" : "",
+            "parm_value" : 100000
+        }
+    ],
+    "max_score" : 20,
+    "obj_info_type" : "TABLE",
+    "output_parms" : [ 
+        {
+            "parm_desc" : "SQL_ID",
+            "parm_name" : "SQL_ID"
+        }, 
+        {
+            "parm_desc" : "PLAN_HASH_VALUE",
+            "parm_name" : "PLAN_HASH_VALUE"
+        }, 
+        {
+            "parm_desc" : "SQL_TEXT",
+            "parm_name" : "SQL_TEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_FULLTEXT",
+            "parm_name" : "SQL_FULLTEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_PLAN",
+            "parm_name" : "SQL_PLAN"
+        }, 
+        {
+            "parm_desc" : "使用的cpu资源",
+            "parm_name" : "STAT_CPU"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "STAT_EXEC"
+        }, 
+        {
+            "parm_desc" : "使用buffer的资源",
+            "parm_name" : "STAT_BUFFER_GETS"
+        }, 
+        {
+            "parm_desc" : "物理读情况",
+            "parm_name" : "STAT_DISK_READS"
+        }, 
+        {
+            "parm_desc" : "解析的时间",
+            "parm_name" : "STAT_ELAPSED_TIME"
+        }, 
+        {
+            "parm_desc" : "名称",
+            "parm_name" : "obj_info_name"
+        }, 
+        {
+            "parm_desc" : "物理大小",
+            "parm_name" : "obj_info_phy_size"
+        }, 
+        {
+            "parm_desc" : "记录数",
+            "parm_name" : "obj_info_num"
+        }, 
+        {
+            "parm_desc" : "表类型",
+            "parm_name" : "obj_info_type"
+        }, 
+        {
+            "parm_desc" : "最后一次分析的时间",
+            "parm_name" : "obj_info_last_analyzed"
+        }, 
+        {
+            "parm_desc" : "最后一次DDL的时间",
+            "parm_name" : "obj_info_ddl_time"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd" : "db.@sql@.find({\"OPERATION\":\"TABLE ACCESS\",\"OPTIONS\":\"FULL\",\"USERNAME\":\"@username@\",\"ETL_DATE\":\"@etl_date@\"}).forEach(function(x){if(db.obj_tab_info.findOne({\"TABLE_NAME\":x.OBJECT_NAME,$or: [{\"NUM_ROWS\":{$gt:@table_row_num@}},{\"PHY_SIZE(MB)\":{$gt:@table_phy_size@}}]}))db.@tmp@.save({\"SQL_ID\":x.SQL_ID,\"PLAN_HASH_VALUE\":x.PLAN_HASH_VALUE,\"OBJECT_NAME\":x.OBJECT_NAME,\"ID\":x.ID,\"COST\":x.COST,\"COUNT\":\"\"});})",
+    "rule_desc" : "大表全表扫描",
+    "rule_name" : "SQL_TABLE_FULL_SCAN",
+    "rule_status" : "ON",
+    "rule_summary" : "大表全表扫描",
+    "rule_type" : "SQLPLAN",
+    "rule_type_detail" : "",
+    "solution" : [ 
+        "1.缺索引评估创建索引", 
+        "2.取max、min值评估创建索引", 
+        "3.索引失效重建索引，分区表维护记得维护索引", 
+        "4.对条件字段使用函数或表达式a.函数、表达式放到等于号的右边b.创建函数索引(下策)", 
+        "5.出现隐式转换a.不同类型的谓词匹配先显式转换b.表定义根据数据选择正确的数据类型", 
+        "6.使用isNULL做查询条件a.不建议使用null值b.null值较少的情况可创建组合索引或者伪列索引(createindexidx_1ontab1(col1,0)c.将null定义一个普通变量", 
+        "7.使用不等运算符<>!=做查询条件a.尽量少用不等判断；b.如果列值是连续，可把否定操作更改为两个区间；c.如果列值不多，可用inlist枚举其他所有值", 
+        "8.模糊匹配'％a％''％a'建议精确匹配", 
+        "9.sql逻辑，比如最大值，改用窗口函数", 
+        "10.弱选择sql，返回结果集较大建议a.添加更多的谓词减少数据的访问，比如时间b.改造分区表c.使用覆盖索引", 
+        "11.hintfull禁用hint1", 
+        "2.统计信息不准确数据批量加载程序触发收集统计信息"
+    ],
+    "weight" : 0.5
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 10.0,
+    "output_parms" : [ 
+        {
+            "parm_desc" : "CHECKSUM",
+            "parm_name" : "CHECKSUM"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "ts_cnt"
+        }, 
+        {
+            "parm_desc" : "平均执行时间",
+            "parm_name" : "query_time_avg"
+        }, 
+        {
+            "parm_desc" : "平均返回记录数",
+            "parm_name" : "rows_sent_avg"
+        }, 
+        {
+            "parm_desc" : "扫描命中率",
+            "parm_name" : "index_ratio"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd" : "db.planitem.find({\"schemas\":\"@schema_name@\",\"dependent\" : true}).forEach(function(x){db.sqlinfo.find({checksum:x.checksum}).forEach(function(y){db.@tmp@.save({\"checksum\" :y.checksum,\"ts_cnt\" :y.ts_cnt,\"query_time_avg\" :y.query_time_avg,\"rows_sent_avg\" :y.rows_sent_avg,\"index_ratio\" :y.index_ratio})})})",
+    "rule_desc" : "dependent",
+    "rule_name" : "DEPENDENT",
+    "rule_status" : "ON",
+    "rule_summary" : "",
+    "rule_type" : "SQLPLAN",
+    "solution" : [ 
+        "使用连接查询"
+    ],
+    "weight" : 0.1
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : [ 
+        "SQL_ID", 
+        "PLAN_HASH_VALUE"
+    ],
+    "input_parms" : [],
+    "max_score" : 5,
+    "obj_info_type" : "PART_TABLE",
+    "output_parms" : [ 
+        {
+            "parm_desc" : "SQL_ID",
+            "parm_name" : "SQL_ID"
+        }, 
+        {
+            "parm_desc" : "PLAN_HASH_VALUE",
+            "parm_name" : "PLAN_HASH_VALUE"
+        }, 
+        {
+            "parm_desc" : "SQL_TEXT",
+            "parm_name" : "SQL_TEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_FULLTEXT",
+            "parm_name" : "SQL_FULLTEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_PLAN",
+            "parm_name" : "SQL_PLAN"
+        }, 
+        {
+            "parm_desc" : "使用的cpu资源",
+            "parm_name" : "STAT_CPU"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "STAT_EXEC"
+        }, 
+        {
+            "parm_desc" : "使用buffer的资源",
+            "parm_name" : "STAT_BUFFER_GETS"
+        }, 
+        {
+            "parm_desc" : "物理读情况",
+            "parm_name" : "STAT_DISK_READS"
+        }, 
+        {
+            "parm_desc" : "解析的时间",
+            "parm_name" : "STAT_ELAPSED_TIME"
+        }, 
+        {
+            "parm_desc" : "名称",
+            "parm_name" : "obj_info_name"
+        }, 
+        {
+            "parm_desc" : "物理大小",
+            "parm_name" : "obj_info_phy_size"
+        }, 
+        {
+            "parm_desc" : "记录数",
+            "parm_name" : "obj_info_num"
+        }, 
+        {
+            "parm_desc" : "分区类型",
+            "parm_name" : "obj_info_type"
+        }, 
+        {
+            "parm_desc" : "分区键",
+            "parm_name" : "obj_info_key"
+        }, 
+        {
+            "parm_desc" : "分区数量",
+            "parm_name" : "obj_info_part_num"
+        }, 
+        {
+            "parm_desc" : "最后一次DDL的时间",
+            "parm_name" : "obj_info_ddl_time"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd" : "db.@sql@.find({\"OPERATION\":\"PARTITION RANGE\",\"OPTIONS\":\"ITERATOR\",\"USERNAME\":\"@username@\",\"ETL_DATE\":\"@etl_date@\"}).forEach(function(x){db.@sql@.find({\"SQL_ID\":x.SQL_ID,\"PLAN_HASH_VALUE\":x.PLAN_HASH_VALUE,\"ID\":{$eq:x.ID+1},\"USERNAME\":\"@username@\",\"ETL_DATE\":\"@etl_date@\"}).forEach(function(y){db.@tmp@.save({\"SQL_ID\":y.SQL_ID,\"PLAN_HASH_VALUE\":y.PLAN_HASH_VALUE,\"OBJECT_NAME\":y.OBJECT_NAME,\"ID\":y.ID,\"COST\":x.COST,\"COUNT\":\"\"})});})",
+    "rule_desc" : "跨分区扫描",
+    "rule_name" : "SQL_PARTITION_RANGE_ITERATOR",
+    "rule_status" : "ON",
+    "rule_summary" : "跨分区扫描",
+    "rule_type" : "SQLPLAN",
+    "rule_type_detail" : "",
+    "solution" : [ 
+        "分区键设计是否合理"
+    ],
+    "weight" : 0.5
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : [ 
+        "SQL_ID", 
+        "PLAN_HASH_VALUE"
+    ],
+    "input_parms" : [ 
+        {
+            "parm_desc" : "索引物理大小",
+            "parm_name" : "ind_phy_size",
+            "parm_unit" : "MB",
+            "parm_value" : 1024.0
+        }
+    ],
+    "max_score" : 5,
+    "obj_info_type" : "INDEX",
+    "output_parms" : [ 
+        {
+            "parm_desc" : "SQL_ID",
+            "parm_name" : "SQL_ID"
+        }, 
+        {
+            "parm_desc" : "PLAN_HASH_VALUE",
+            "parm_name" : "PLAN_HASH_VALUE"
+        }, 
+        {
+            "parm_desc" : "SQL_TEXT",
+            "parm_name" : "SQL_TEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_FULLTEXT",
+            "parm_name" : "SQL_FULLTEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_PLAN",
+            "parm_name" : "SQL_PLAN"
+        }, 
+        {
+            "parm_desc" : "使用的cpu资源",
+            "parm_name" : "STAT_CPU"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "STAT_EXEC"
+        }, 
+        {
+            "parm_desc" : "使用buffer的资源",
+            "parm_name" : "STAT_BUFFER_GETS"
+        }, 
+        {
+            "parm_desc" : "物理读情况",
+            "parm_name" : "STAT_DISK_READS"
+        }, 
+        {
+            "parm_desc" : "解析的时间",
+            "parm_name" : "STAT_ELAPSED_TIME"
+        }, 
+        {
+            "parm_desc" : "名称",
+            "parm_name" : "obj_info_name"
+        }, 
+        {
+            "parm_desc" : "物理大小",
+            "parm_name" : "obj_info_phy_size"
+        }, 
+        {
+            "parm_desc" : "不同值的数量",
+            "parm_name" : "obj_info_dist_num"
+        }, 
+        {
+            "parm_desc" : "索引类型",
+            "parm_name" : "obj_info_type"
+        }, 
+        {
+            "parm_desc" : "是否为unique",
+            "parm_name" : "obj_info_uniqueness"
+        }, 
+        {
+            "parm_desc" : "索引高度",
+            "parm_name" : "obj_info_blevel"
+        }, 
+        {
+            "parm_desc" : "最后一次分析的时间",
+            "parm_name" : "obj_info_last_analyzed"
+        }, 
+        {
+            "parm_desc" : "最后一次DDL的时间",
+            "parm_name" : "obj_info_ddl_time"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd" : "db.@sql@.find({\"OPERATION\":\"INDEX\",\"OPTIONS\":\"FULL SCAN\",\"USERNAME\":\"@username@\",\"ETL_DATE\":\"@etl_date@\"}).forEach(function(x){if(db.obj_ind_info.findOne({\"INDEX_NAME\":x.OBJECT_NAME,\"PHY_SIZE(MB)\":{$gt:@ind_phy_size@}}))db.@tmp@.save({\"SQL_ID\":x.SQL_ID,\"PLAN_HASH_VALUE\":x.PLAN_HASH_VALUE,\"OBJECT_NAME\":x.OBJECT_NAME,\"ID\":x.ID,\"COST\":x.COST,\"COUNT\":\"\"});})",
+    "rule_desc" : "大索引全扫描",
+    "rule_name" : "SQL_INDEX_FULL_SCAN",
+    "rule_status" : "ON",
+    "rule_summary" : "大索引全扫描",
+    "rule_type" : "SQLPLAN",
+    "rule_type_detail" : "",
+    "solution" : [ 
+        "sql逻辑能否改写获取更少的数据"
+    ],
+    "weight" : 1.0
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 10.0,
+    "output_parms" : [ 
+        {
+            "parm_desc" : "CHECKSUM",
+            "parm_name" : "CHECKSUM"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "ts_cnt"
+        }, 
+        {
+            "parm_desc" : "平均执行时间",
+            "parm_name" : "query_time_avg"
+        }, 
+        {
+            "parm_desc" : "平均返回记录数",
+            "parm_name" : "rows_sent_avg"
+        }, 
+        {
+            "parm_desc" : "扫描命中率",
+            "parm_name" : "index_ratio"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd" : "db.planitem.find({\"schemas\":\"@schema_name@\",\"access_type\" : \"unique_subquery\"}).forEach(function(x){db.sqlinfo.find({checksum:x.checksum}).forEach(function(y){db.@tmp@.save({\"checksum\" :y.checksum,\"ts_cnt\" :y.ts_cnt,\"query_time_avg\" :y.query_time_avg,\"rows_sent_avg\" :y.rows_sent_avg,\"index_ratio\" :y.index_ratio})})})",
+    "rule_desc" : "unique_subquery",
+    "rule_name" : "UNIQUE_SUBQUERY",
+    "rule_status" : "ON",
+    "rule_summary" : "",
+    "rule_type" : "SQLPLAN",
+    "solution" : [ 
+        "子查询改写为表关联"
+    ],
+    "weight" : 0.1
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 10.0,
+    "output_parms" : [ 
+        {
+            "parm_desc" : "CHECKSUM",
+            "parm_name" : "CHECKSUM"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "ts_cnt"
+        }, 
+        {
+            "parm_desc" : "平均执行时间",
+            "parm_name" : "query_time_avg"
+        }, 
+        {
+            "parm_desc" : "平均返回记录数",
+            "parm_name" : "rows_sent_avg"
+        }, 
+        {
+            "parm_desc" : "扫描命中率",
+            "parm_name" : "index_ratio"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd" : "db.planitem.find({\"schemas\":\"@schema_name@\",\"cacheable\" : false}).forEach(function(x){db.sqlinfo.find({checksum:x.checksum}).forEach(function(y){db.@tmp@.save({\"checksum\" :y.checksum,\"ts_cnt\" :y.ts_cnt,\"query_time_avg\" :y.query_time_avg,\"rows_sent_avg\" :y.rows_sent_avg,\"index_ratio\" :y.index_ratio})})})",
+    "rule_desc" : "cacheable",
+    "rule_name" : "CACHEABLE",
+    "rule_status" : "ON",
+    "rule_summary" : "",
+    "rule_type" : "SQLPLAN",
+    "solution" : [ 
+        "无后续补充"
+    ],
+    "weight" : 0.1
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : [ 
+        "SQL_ID", 
+        "PLAN_HASH_VALUE"
+    ],
+    "input_parms" : [],
+    "max_score" : 20,
+    "obj_info_type" : "PART_TABLE",
+    "output_parms" : [ 
+        {
+            "parm_desc" : "SQL_ID",
+            "parm_name" : "SQL_ID"
+        }, 
+        {
+            "parm_desc" : "PLAN_HASH_VALUE",
+            "parm_name" : "PLAN_HASH_VALUE"
+        }, 
+        {
+            "parm_desc" : "SQL_TEXT",
+            "parm_name" : "SQL_TEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_FULLTEXT",
+            "parm_name" : "SQL_FULLTEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_PLAN",
+            "parm_name" : "SQL_PLAN"
+        }, 
+        {
+            "parm_desc" : "使用的cpu资源",
+            "parm_name" : "STAT_CPU"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "STAT_EXEC"
+        }, 
+        {
+            "parm_desc" : "使用buffer的资源",
+            "parm_name" : "STAT_BUFFER_GETS"
+        }, 
+        {
+            "parm_desc" : "物理读情况",
+            "parm_name" : "STAT_DISK_READS"
+        }, 
+        {
+            "parm_desc" : "解析的时间",
+            "parm_name" : "STAT_ELAPSED_TIME"
+        }, 
+        {
+            "parm_desc" : "名称",
+            "parm_name" : "obj_info_name"
+        }, 
+        {
+            "parm_desc" : "物理大小",
+            "parm_name" : "obj_info_phy_size"
+        }, 
+        {
+            "parm_desc" : "记录数",
+            "parm_name" : "obj_info_num"
+        }, 
+        {
+            "parm_desc" : "分区类型",
+            "parm_name" : "obj_info_type"
+        }, 
+        {
+            "parm_desc" : "分区键",
+            "parm_name" : "obj_info_key"
+        }, 
+        {
+            "parm_desc" : "分区数量",
+            "parm_name" : "obj_info_part_num"
+        }, 
+        {
+            "parm_desc" : "最后一次DDL的时间",
+            "parm_name" : "obj_info_ddl_time"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd" : "db.@sql@.find({\"OPERATION\":\"PARTITION RANGE\",\"OPTIONS\":\"ALL\",\"USERNAME\":\"@username@\",\"ETL_DATE\":\"@etl_date@\"}).forEach(function(x){db.@sql@.find({\"SQL_ID\":x.SQL_ID,\"PLAN_HASH_VALUE\":x.PLAN_HASH_VALUE,\"ID\":{$eq:x.ID+1}}).forEach(function(y){db.@tmp@.save({\"SQL_ID\":y.SQL_ID,\"PLAN_HASH_VALUE\":y.PLAN_HASH_VALUE,\"OBJECT_NAME\":y.OBJECT_NAME,\"ID\":y.ID,\"COST\":x.COST,\"COUNT\":\"\"})});})",
+    "rule_desc" : "分区全扫描",
+    "rule_name" : "SQL_PARTITION_RANGE_ALL",
+    "rule_status" : "ON",
+    "rule_summary" : "分区全扫描",
+    "rule_type" : "SQLPLAN",
+    "rule_type_detail" : "",
+    "solution" : [ 
+        "分区键设计是否合理"
+    ],
+    "weight" : 0.5
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : [ 
+        "SQL_ID", 
+        "PLAN_HASH_VALUE"
+    ],
+    "input_parms" : [ 
+        {
+            "parm_desc" : "索引物理大小",
+            "parm_name" : "ind_phy_size",
+            "parm_unit" : "MB",
+            "parm_value" : 100.0
+        }
+    ],
+    "max_score" : 10,
+    "obj_info_type" : "INDEX",
+    "output_parms" : [ 
+        {
+            "parm_desc" : "SQL_ID",
+            "parm_name" : "SQL_ID"
+        }, 
+        {
+            "parm_desc" : "PLAN_HASH_VALUE",
+            "parm_name" : "PLAN_HASH_VALUE"
+        }, 
+        {
+            "parm_desc" : "SQL_TEXT",
+            "parm_name" : "SQL_TEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_FULLTEXT",
+            "parm_name" : "SQL_FULLTEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_PLAN",
+            "parm_name" : "SQL_PLAN"
+        }, 
+        {
+            "parm_desc" : "使用的cpu资源",
+            "parm_name" : "STAT_CPU"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "STAT_EXEC"
+        }, 
+        {
+            "parm_desc" : "使用buffer的资源",
+            "parm_name" : "STAT_BUFFER_GETS"
+        }, 
+        {
+            "parm_desc" : "物理读情况",
+            "parm_name" : "STAT_DISK_READS"
+        }, 
+        {
+            "parm_desc" : "解析的时间",
+            "parm_name" : "STAT_ELAPSED_TIME"
+        }, 
+        {
+            "parm_desc" : "名称",
+            "parm_name" : "obj_info_name"
+        }, 
+        {
+            "parm_desc" : "物理大小",
+            "parm_name" : "obj_info_phy_size"
+        }, 
+        {
+            "parm_desc" : "不同值的数量",
+            "parm_name" : "obj_info_dist_num"
+        }, 
+        {
+            "parm_desc" : "索引类型",
+            "parm_name" : "obj_info_type"
+        }, 
+        {
+            "parm_desc" : "是否为unique",
+            "parm_name" : "obj_info_uniqueness"
+        }, 
+        {
+            "parm_desc" : "索引高度",
+            "parm_name" : "obj_info_blevel"
+        }, 
+        {
+            "parm_desc" : "表名",
+            "parm_name" : "obj_info_tab_name"
+        }, 
+        {
+            "parm_desc" : "索引聚簇因子",
+            "parm_name" : "obj_info_cluster_factor"
+        }, 
+        {
+            "parm_desc" : "最后一次分析的时间",
+            "parm_name" : "obj_info_last_analyzed"
+        }, 
+        {
+            "parm_desc" : "最后一次DDL的时间",
+            "parm_name" : "obj_info_ddl_time"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd" : "db.@sql@.find({\"OPERATION\":\"INDEX\",\"OPTIONS\":\"FAST FULL SCAN\",\"USERNAME\":\"@username@\",\"ETL_DATE\":\"@etl_date@\"}).forEach(function(x){if(db.obj_ind_info.findOne({\"INDEX_NAME\":x.OBJECT_NAME,\"PHY_SIZE(MB)\":{$gt:@ind_phy_size@}}))db.@tmp@.save({\"SQL_ID\":x.SQL_ID,\"PLAN_HASH_VALUE\":x.PLAN_HASH_VALUE,\"OBJECT_NAME\":x.OBJECT_NAME,\"ID\":x.ID,\"COST\":x.COST,\"COUNT\":\"\"});})",
+    "rule_desc" : "大索引快速全扫描",
+    "rule_name" : "SQL_INDEX_FAST_FULL_SCAN",
+    "rule_status" : "ON",
+    "rule_summary" : "大索引快速全扫描",
+    "rule_type" : "SQLPLAN",
+    "rule_type_detail" : "",
+    "solution" : [ 
+        "sql逻辑能否改写获取更少的数据"
+    ],
+    "weight" : 0.5
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : [ 
+        "SQL_ID", 
+        "PLAN_HASH_VALUE"
+    ],
+    "input_parms" : [],
+    "max_score" : 5,
+    "obj_info_type" : "INDEX",
+    "output_parms" : [ 
+        {
+            "parm_desc" : "SQL_ID",
+            "parm_name" : "SQL_ID"
+        }, 
+        {
+            "parm_desc" : "PLAN_HASH_VALUE",
+            "parm_name" : "PLAN_HASH_VALUE"
+        }, 
+        {
+            "parm_desc" : "SQL_TEXT",
+            "parm_name" : "SQL_TEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_FULLTEXT",
+            "parm_name" : "SQL_FULLTEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_PLAN",
+            "parm_name" : "SQL_PLAN"
+        }, 
+        {
+            "parm_desc" : "使用的cpu资源",
+            "parm_name" : "STAT_CPU"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "STAT_EXEC"
+        }, 
+        {
+            "parm_desc" : "使用buffer的资源",
+            "parm_name" : "STAT_BUFFER_GETS"
+        }, 
+        {
+            "parm_desc" : "物理读情况",
+            "parm_name" : "STAT_DISK_READS"
+        }, 
+        {
+            "parm_desc" : "解析的时间",
+            "parm_name" : "STAT_ELAPSED_TIME"
+        }, 
+        {
+            "parm_desc" : "名称",
+            "parm_name" : "obj_info_name"
+        }, 
+        {
+            "parm_desc" : "物理大小",
+            "parm_name" : "obj_info_phy_size"
+        }, 
+        {
+            "parm_desc" : "不同值的数量",
+            "parm_name" : "obj_info_dist_num"
+        }, 
+        {
+            "parm_desc" : "索引类型",
+            "parm_name" : "obj_info_type"
+        }, 
+        {
+            "parm_desc" : "是否为unique",
+            "parm_name" : "obj_info_uniqueness"
+        }, 
+        {
+            "parm_desc" : "索引高度",
+            "parm_name" : "obj_info_blevel"
+        }, 
+        {
+            "parm_desc" : "最后一次分析的时间",
+            "parm_name" : "obj_info_last_analyzed"
+        }, 
+        {
+            "parm_desc" : "最后一次DDL的时间",
+            "parm_name" : "obj_info_ddl_time"
+        }, 
+        {
+            "parm_desc" : "列名",
+            "parm_name" : "obj_info_col_name"
+        }, 
+        {
+            "parm_desc" : "列的位置",
+            "parm_name" : "obj_info_col_post"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd" : "db.@sql@.find({\"OPERATION\":\"INDEX\",\"OPTIONS\":\"SKIP SCAN\",\"USERNAME\":\"@username@\",\"ETL_DATE\":\"@etl_date@\"}).forEach(function(x){db.@tmp@.save({\"SQL_ID\":x.SQL_ID,\"PLAN_HASH_VALUE\":x.PLAN_HASH_VALUE,\"OBJECT_NAME\":x.OBJECT_NAME,\"ID\":x.ID,\"COST\":x.COST,\"COUNT\":\"\"});})",
+    "rule_desc" : "索引跳跃扫描",
+    "rule_name" : "SQL_INDEX_SKIP_SCAN",
+    "rule_status" : "ON",
+    "rule_summary" : "索引跳跃扫描",
+    "rule_type" : "SQLPLAN",
+    "rule_type_detail" : "",
+    "solution" : [ 
+        "索引列的先后顺序是否合理"
+    ],
+    "weight" : 0.1
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : [ 
+        "SQL_ID", 
+        "PLAN_HASH_VALUE"
+    ],
+    "input_parms" : [],
+    "max_score" : 5,
+    "obj_info_type" : "TABLE",
+    "output_parms" : [ 
+        {
+            "parm_desc" : "SQL_ID",
+            "parm_name" : "SQL_ID"
+        }, 
+        {
+            "parm_desc" : "PLAN_HASH_VALUE",
+            "parm_name" : "PLAN_HASH_VALUE"
+        }, 
+        {
+            "parm_desc" : "SQL_TEXT",
+            "parm_name" : "SQL_TEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_FULLTEXT",
+            "parm_name" : "SQL_FULLTEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_PLAN",
+            "parm_name" : "SQL_PLAN"
+        }, 
+        {
+            "parm_desc" : "使用的cpu资源",
+            "parm_name" : "STAT_CPU"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "STAT_EXEC"
+        }, 
+        {
+            "parm_desc" : "使用buffer的资源",
+            "parm_name" : "STAT_BUFFER_GETS"
+        }, 
+        {
+            "parm_desc" : "物理读情况",
+            "parm_name" : "STAT_DISK_READS"
+        }, 
+        {
+            "parm_desc" : "解析的时间",
+            "parm_name" : "STAT_ELAPSED_TIME"
+        }, 
+        {
+            "parm_desc" : "名称",
+            "parm_name" : "obj_info_name"
+        }, 
+        {
+            "parm_desc" : "物理大小",
+            "parm_name" : "obj_info_phy_size"
+        }, 
+        {
+            "parm_desc" : "记录数",
+            "parm_name" : "obj_info_num"
+        }, 
+        {
+            "parm_desc" : "表类型",
+            "parm_name" : "obj_info_type"
+        }, 
+        {
+            "parm_desc" : "最后一次分析的时间",
+            "parm_name" : "obj_info_last_analyzed"
+        }, 
+        {
+            "parm_desc" : "最后一次DDL的时间",
+            "parm_name" : "obj_info_ddl_time"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd" : "db.@sql@.find({\"OPERATION\":\"MERGE JOIN\",\"OPTIONS\":\"CARTESIAN\",\"USERNAME\":\"@username@\",\"ETL_DATE\":\"@etl_date@\"}).forEach(function(x){db.@tmp@.save({\"SQL_ID\":x.SQL_ID,\"PLAN_HASH_VALUE\":x.PLAN_HASH_VALUE,\"OBJECT_NAME\":x.OBJECT_NAME,\"ID\":x.ID,\"COST\":x.COST,\"COUNT\":\"\"});})",
+    "rule_desc" : "笛卡尔积",
+    "rule_name" : "SQL_MERGE_JOIN_CARTESIAN",
+    "rule_status" : "ON",
+    "rule_summary" : "笛卡尔积",
+    "rule_type" : "SQLPLAN",
+    "rule_type_detail" : "",
+    "solution" : [ 
+        "1.表关联条件缺失，加上关联条件", 
+        "2.统计信息不准确，手工收集统计信息"
+    ],
+    "weight" : 0.1
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : [ 
+        "SQL_ID", 
+        "PLAN_HASH_VALUE"
+    ],
+    "input_parms" : [ 
+        {
+            "parm_desc" : "关联表的数量",
+            "parm_name" : "tab_num",
+            "parm_unit" : "",
+            "parm_value" : 5
+        }
+    ],
+    "max_score" : 10,
+    "obj_info_type" : "",
+    "output_parms" : [ 
+        {
+            "parm_desc" : "SQL_ID",
+            "parm_name" : "SQL_ID"
+        }, 
+        {
+            "parm_desc" : "PLAN_HASH_VALUE",
+            "parm_name" : "PLAN_HASH_VALUE"
+        }, 
+        {
+            "parm_desc" : "SQL_TEXT",
+            "parm_name" : "SQL_TEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_FULLTEXT",
+            "parm_name" : "SQL_FULLTEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_PLAN",
+            "parm_name" : "SQL_PLAN"
+        }, 
+        {
+            "parm_desc" : "使用的cpu资源",
+            "parm_name" : "STAT_CPU"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "STAT_EXEC"
+        }, 
+        {
+            "parm_desc" : "使用buffer的资源",
+            "parm_name" : "STAT_BUFFER_GETS"
+        }, 
+        {
+            "parm_desc" : "物理读情况",
+            "parm_name" : "STAT_DISK_READS"
+        }, 
+        {
+            "parm_desc" : "解析的时间",
+            "parm_name" : "STAT_ELAPSED_TIME"
+        }, 
+        {
+            "parm_desc" : "名称",
+            "parm_name" : "obj_info_name"
+        }, 
+        {
+            "parm_desc" : "物理大小",
+            "parm_name" : "obj_info_phy_size"
+        }, 
+        {
+            "parm_desc" : "记录数",
+            "parm_name" : "obj_info_num"
+        }, 
+        {
+            "parm_desc" : "表类型",
+            "parm_name" : "obj_info_type"
+        }, 
+        {
+            "parm_desc" : "最后一次分析的时间",
+            "parm_name" : "obj_info_last_analyzed"
+        }, 
+        {
+            "parm_desc" : "最后一次DDL的时间",
+            "parm_name" : "obj_info_ddl_time"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd" : "db.@sql@.group( { key:{\"USERNAME\":1,\"ETL_DATE\":1,\"SQL_ID\":1,\"PLAN_HASH_VALUE\":1,\"OBJECT_TYPE\":1}, cond:{\"USERNAME\":\"@username@\",\"ETL_DATE\":\"@etl_date@\",\"OBJECT_TYPE\":\"TABLE\"}, reduce:function(curr,result){ result.count++; }, initial:{count:0} } ).forEach(function(x){db.@tmp1@.save({\"SQL_ID\":x.SQL_ID,\"PLAN_HASH_VALUE\":x.PLAN_HASH_VALUE,\"ID\":x.ID,\"COUNT\":x.count})});db.@tmp1@.find({\"COUNT\":{$gte:@tab_num@}}).forEach(function(y){db.@tmp@.save({\"SQL_ID\":y.SQL_ID,\"PLAN_HASH_VALUE\":y.PLAN_HASH_VALUE,\"ID\":y.ID,\"COUNT\":y.COUNT,\"COST\":\"\",\"OBJECT_NAME\":\"\"})})",
+    "rule_desc" : "过多的表关联，影响性能",
+    "rule_name" : "SQL_TAB_REL_NUM",
+    "rule_status" : "ON",
+    "rule_summary" : "过多的表关联，影响性能",
+    "rule_type" : "SQLPLAN",
+    "solution" : [ 
+        "建议减少表关联，业务逻辑sql改写"
+    ],
+    "weight" : 0.1
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : [ 
+        "SQL_ID", 
+        "PLAN_HASH_VALUE"
+    ],
+    "input_parms" : [],
+    "max_score" : 5,
+    "obj_info_type" : "PART_TABLE",
+    "output_parms" : [ 
+        {
+            "parm_desc" : "SQL_ID",
+            "parm_name" : "SQL_ID"
+        }, 
+        {
+            "parm_desc" : "PLAN_HASH_VALUE",
+            "parm_name" : "PLAN_HASH_VALUE"
+        }, 
+        {
+            "parm_desc" : "SQL_TEXT",
+            "parm_name" : "SQL_TEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_FULLTEXT",
+            "parm_name" : "SQL_FULLTEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_PLAN",
+            "parm_name" : "SQL_PLAN"
+        }, 
+        {
+            "parm_desc" : "使用的cpu资源",
+            "parm_name" : "STAT_CPU"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "STAT_EXEC"
+        }, 
+        {
+            "parm_desc" : "使用buffer的资源",
+            "parm_name" : "STAT_BUFFER_GETS"
+        }, 
+        {
+            "parm_desc" : "物理读情况",
+            "parm_name" : "STAT_DISK_READS"
+        }, 
+        {
+            "parm_desc" : "解析的时间",
+            "parm_name" : "STAT_ELAPSED_TIME"
+        }, 
+        {
+            "parm_desc" : "名称",
+            "parm_name" : "obj_info_name"
+        }, 
+        {
+            "parm_desc" : "物理大小",
+            "parm_name" : "obj_info_phy_size"
+        }, 
+        {
+            "parm_desc" : "记录数",
+            "parm_name" : "obj_info_num"
+        }, 
+        {
+            "parm_desc" : "分区类型",
+            "parm_name" : "obj_info_type"
+        }, 
+        {
+            "parm_desc" : "分区键",
+            "parm_name" : "obj_info_key"
+        }, 
+        {
+            "parm_desc" : "分区数量",
+            "parm_name" : "obj_info_part_num"
+        }, 
+        {
+            "parm_desc" : "最后一次DDL的时间",
+            "parm_name" : "obj_info_ddl_time"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd" : "db.@sql@.find({\"OPERATION\":\"PARTITION RANGE\",$or: [{\"OPTIONS\":\"INLIST\"},{\"OPTIONS\":\"OR\"}],\"USERNAME\":\"@username@\",\"ETL_DATE\":\"@etl_date@\"}).forEach(function(x){db.@sql@.find({\"SQL_ID\":x.SQL_ID,\"PLAN_HASH_VALUE\":x.PLAN_HASH_VALUE,\"ID\":{$eq:x.ID+1}}).forEach(function(y){db.@tmp@.save({\"SQL_ID\":y.SQL_ID,\"PLAN_HASH_VALUE\":y.PLAN_HASH_VALUE,\"OBJECT_NAME\":y.OBJECT_NAME,\"ID\":y.ID,\"COST\":x.COST,\"COUNT\":\"\"})});})",
+    "rule_desc" : "非连续分区扫描",
+    "rule_name" : "SQL_PARTITION_RANGE_INLIST_OR",
+    "rule_status" : "ON",
+    "rule_summary" : "非连续分区扫描",
+    "rule_type" : "SQLPLAN",
+    "rule_type_detail" : "",
+    "solution" : [ 
+        "分区键设计是否合理"
+    ],
+    "weight" : 0.5
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 10.0,
+    "output_parms" : [ 
+        {
+            "parm_desc" : "CHECKSUM",
+            "parm_name" : "CHECKSUM"
+        }, 
+        {
+            "parm_desc" : "扫描行数",
+            "parm_name" : "ROWS"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "ts_cnt"
+        }, 
+        {
+            "parm_desc" : "平均执行时间",
+            "parm_name" : "query_time_avg"
+        }, 
+        {
+            "parm_desc" : "平均返回记录数",
+            "parm_name" : "rows_sent_avg"
+        }, 
+        {
+            "parm_desc" : "扫描命中率",
+            "parm_name" : "index_ratio"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd" : "db.planitem.find({\"schemas\":\"@schema_name@\",\"access_type\" : \"ALL\",\"rows\" : {\"$gt\":1},\"citem_type\":{\"$ne\":\"materialized_from_subquery\"}}).forEach(function(x){db.sqlinfo.find({checksum:x.checksum}).forEach(function(y){db.@tmp@.save({\"checksum\" :y.checksum,\"ts_cnt\" :y.ts_cnt,\"query_time_avg\" :y.query_time_avg,\"rows_sent_avg\" :y.rows_sent_avg,\"index_ratio\" :y.index_ratio,\"rows\":x.rows})})})",
+    "rule_desc" : "全表扫描",
+    "rule_name" : "TABLE_FULL_SCAN",
+    "rule_status" : "ON",
+    "rule_summary" : "大表全表扫描，行数超过阀值，扫描了多余的数据，建议使用索引来避免",
+    "rule_type" : "SQLPLAN",
+    "solution" : [ 
+        "1.缺索引评估创建索引", 
+        "2.取max、min值评估创建索引", 
+        "3.索引失效重建索引，分区表维护记得维护索引", 
+        "4.对条件字段使用函数或表达式a.函数、表达式放到等于号的右边b.创建函数索引(下策)", 
+        "5.出现隐式转换a.不同类型的谓词匹配先显式转换b.表定义根据数据选择正确的数据类型", 
+        "6.使用不等运算符<>!=做查询条件a.尽量少用不等判断；b.如果列值是连续，可把否定操作更改为两个区间；c.如果列值不多，可用inlist枚举其他所有值", 
+        "7.模糊匹配％a％,％a建议精确匹配", 
+        "8.sql逻辑，比如最大值，改用窗口函数", 
+        "9.弱选择sql，返回结果集较大建议a.添加更多的谓词减少数据的访问，比如时间b.改造分区表c.使用覆盖索引", 
+        "10.统计信息不准确数据批量加载程序触发收集统计信息"
+    ],
+    "weight" : 0.1
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 10.0,
+    "output_parms" : [ 
+        {
+            "parm_desc" : "CHECKSUM",
+            "parm_name" : "CHECKSUM"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "ts_cnt"
+        }, 
+        {
+            "parm_desc" : "平均执行时间",
+            "parm_name" : "query_time_avg"
+        }, 
+        {
+            "parm_desc" : "平均返回记录数",
+            "parm_name" : "rows_sent_avg"
+        }, 
+        {
+            "parm_desc" : "扫描命中率",
+            "parm_name" : "index_ratio"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd" : "db.planitem.find({\"schemas\":\"@schema_name@\",\"using_temporary_table\" : true}).forEach(function(x){db.sqlinfo.find({checksum:x.checksum}).forEach(function(y){db.@tmp@.save({\"checksum\" :y.checksum,\"ts_cnt\" :y.ts_cnt,\"query_time_avg\" :y.query_time_avg,\"rows_sent_avg\" :y.rows_sent_avg,\"index_ratio\" :y.index_ratio})})})",
+    "rule_desc" : "临时表排序",
+    "rule_name" : "USING_TEMPORARY_TABLE",
+    "rule_status" : "ON",
+    "rule_summary" : "",
+    "rule_type" : "SQLPLAN",
+    "solution" : [ 
+        "避免大排序"
+    ],
+    "weight" : 0.1
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 10.0,
+    "output_parms" : [ 
+        {
+            "parm_desc" : "CHECKSUM",
+            "parm_name" : "CHECKSUM"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "ts_cnt"
+        }, 
+        {
+            "parm_desc" : "平均执行时间",
+            "parm_name" : "query_time_avg"
+        }, 
+        {
+            "parm_desc" : "平均返回记录数",
+            "parm_name" : "rows_sent_avg"
+        }, 
+        {
+            "parm_desc" : "扫描命中率",
+            "parm_name" : "index_ratio"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd" : "db.planitem.find({\"schemas\":\"@schema_name@\",\"using_filesort\" : true}).forEach(function(x){db.sqlinfo.find({checksum:x.checksum}).forEach(function(y){db.@tmp@.save({\"checksum\" :y.checksum,\"ts_cnt\" :y.ts_cnt,\"query_time_avg\" :y.query_time_avg,\"rows_sent_avg\" :y.rows_sent_avg,\"index_ratio\" :y.index_ratio})})})",
+    "rule_desc" : "磁盘排序",
+    "rule_name" : "USING_FILESORT",
+    "rule_status" : "ON",
+    "rule_summary" : "",
+    "rule_type" : "SQLPLAN",
+    "solution" : [ 
+        "避免大排序"
+    ],
+    "weight" : 0.1
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 10.0,
+    "output_parms" : [ 
+        {
+            "parm_desc" : "CHECKSUM",
+            "parm_name" : "CHECKSUM"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "ts_cnt"
+        }, 
+        {
+            "parm_desc" : "平均执行时间",
+            "parm_name" : "query_time_avg"
+        }, 
+        {
+            "parm_desc" : "平均返回记录数",
+            "parm_name" : "rows_sent_avg"
+        }, 
+        {
+            "parm_desc" : "扫描命中率",
+            "parm_name" : "index_ratio"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd" : "db.planitem.find({\"schemas\":\"@schema_name@\",\"access_type\" : \"fulltext\"}).forEach(function(x){db.sqlinfo.find({checksum:x.checksum}).forEach(function(y){db.@tmp@.save({\"checksum\" :y.checksum,\"ts_cnt\" :y.ts_cnt,\"query_time_avg\" :y.query_time_avg,\"rows_sent_avg\" :y.rows_sent_avg,\"index_ratio\" :y.index_ratio})})})",
+    "rule_desc" : "fulltext",
+    "rule_name" : "FULLTEXT",
+    "rule_status" : "ON",
+    "rule_summary" : "",
+    "rule_type" : "SQLPLAN",
+    "solution" : [ 
+        "不建议使用全文索引，大字段使用外部存储方式"
+    ],
+    "weight" : 0.1
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 10.0,
+    "output_parms" : [ 
+        {
+            "parm_desc" : "CHECKSUM",
+            "parm_name" : "CHECKSUM"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "ts_cnt"
+        }, 
+        {
+            "parm_desc" : "平均执行时间",
+            "parm_name" : "query_time_avg"
+        }, 
+        {
+            "parm_desc" : "平均返回记录数",
+            "parm_name" : "rows_sent_avg"
+        }, 
+        {
+            "parm_desc" : "扫描命中率",
+            "parm_name" : "index_ratio"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd" : "db.planitem.find({\"schemas\":\"@schema_name@\",\"access_type\" : \"index_merge\"}).forEach(function(x){db.sqlinfo.find({checksum:x.checksum}).forEach(function(y){db.@tmp@.save({\"checksum\" :y.checksum,\"ts_cnt\" :y.ts_cnt,\"query_time_avg\" :y.query_time_avg,\"rows_sent_avg\" :y.rows_sent_avg,\"index_ratio\" :y.index_ratio})})})",
+    "rule_desc" : "index_merge",
+    "rule_name" : "INDEX_MERGE",
+    "rule_status" : "ON",
+    "rule_summary" : "",
+    "rule_type" : "SQLPLAN",
+    "solution" : [ 
+        "创建复合索引"
+    ],
+    "weight" : 0.1
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : [ 
+        "SQL_ID", 
+        "PLAN_HASH_VALUE"
+    ],
+    "input_parms" : [],
+    "max_score" : 20,
+    "obj_info_type" : "VIEW",
+    "output_parms" : [ 
+        {
+            "parm_desc" : "SQL_ID",
+            "parm_name" : "SQL_ID"
+        }, 
+        {
+            "parm_desc" : "PLAN_HASH_VALUE",
+            "parm_name" : "PLAN_HASH_VALUE"
+        }, 
+        {
+            "parm_desc" : "SQL_TEXT",
+            "parm_name" : "SQL_TEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_FULLTEXT",
+            "parm_name" : "SQL_FULLTEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_PLAN",
+            "parm_name" : "SQL_PLAN"
+        }, 
+        {
+            "parm_desc" : "使用的cpu资源",
+            "parm_name" : "STAT_CPU"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "STAT_EXEC"
+        }, 
+        {
+            "parm_desc" : "使用buffer的资源",
+            "parm_name" : "STAT_BUFFER_GETS"
+        }, 
+        {
+            "parm_desc" : "物理读情况",
+            "parm_name" : "STAT_DISK_READS"
+        }, 
+        {
+            "parm_desc" : "解析的时间",
+            "parm_name" : "STAT_ELAPSED_TIME"
+        }, 
+        {
+            "parm_desc" : "名称",
+            "parm_name" : "obj_info_name"
+        }, 
+        {
+            "parm_desc" : "view对象的名称",
+            "parm_name" : "obj_info_type"
+        }, 
+        {
+            "parm_desc" : "view关联对象的owner",
+            "parm_name" : "obj_info_rel_owner"
+        }, 
+        {
+            "parm_desc" : "view关联对象的名称",
+            "parm_name" : "obj_info_rel_name"
+        }, 
+        {
+            "parm_desc" : "view关联对象的类型",
+            "parm_name" : "obj_info_rel_type"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd" : "db.@sql@.find({\"OBJECT_TYPE\":\"VIEW\",\"USERNAME\":\"@username@\",\"ETL_DATE\":\"@etl_date@\",\"OBJECT_OWNER\":{$ne:null},\"OBJECT_NAME\":/^index$_join$/}).forEach(function(x){db.@tmp@.save({\"SQL_ID\":x.SQL_ID,\"PLAN_HASH_VALUE\":x.PLAN_HASH_VALUE,\"OBJECT_NAME\":x.OBJECT_NAME,\"ID\":x.ID,\"COST\":x.COST,\"COUNT\":\"\"})})",
+    "rule_desc" : "存在视图访问",
+    "rule_name" : "SQL_VIEW_SCAN",
+    "rule_status" : "ON",
+    "rule_summary" : "存在视图访问",
+    "rule_type" : "SQLPLAN",
+    "rule_type_detail" : "",
+    "solution" : [ 
+        "视图不能展开，复杂视图拆解、改写"
+    ],
+    "weight" : 0.5
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 10.0,
+    "output_parms" : [ 
+        {
+            "parm_desc" : "CHECKSUM",
+            "parm_name" : "CHECKSUM"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "ts_cnt"
+        }, 
+        {
+            "parm_desc" : "平均执行时间",
+            "parm_name" : "query_time_avg"
+        }, 
+        {
+            "parm_desc" : "平均返回记录数",
+            "parm_name" : "rows_sent_avg"
+        }, 
+        {
+            "parm_desc" : "扫描命中率",
+            "parm_name" : "index_ratio"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd" : "db.planitem.find({\"schemas\":\"@schema_name@\",\"citem_type\" : \"nested_loop\",\"citem.3\":{\"$exists\":1}}).forEach(function(x){db.sqlinfo.find({checksum:x.checksum}).forEach(function(y){db.@tmp@.save({\"checksum\" :y.checksum,\"ts_cnt\" :y.ts_cnt,\"query_time_avg\" :y.query_time_avg,\"rows_sent_avg\" :y.rows_sent_avg,\"index_ratio\" :y.index_ratio})})})",
+    "rule_desc" : "multi_tab_join",
+    "rule_name" : "MULTI_TAB_JOIN",
+    "rule_status" : "ON",
+    "rule_summary" : "",
+    "rule_type" : "SQLPLAN",
+    "solution" : [ 
+        "sql逻辑改写，减少表关联"
+    ],
+    "weight" : 0.1
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : [ 
+        "SQL_ID", 
+        "PLAN_HASH_VALUE"
+    ],
+    "input_parms" : [],
+    "max_score" : 5,
+    "obj_info_type" : "",
+    "output_parms" : [ 
+        {
+            "parm_desc" : "SQL_ID",
+            "parm_name" : "SQL_ID"
+        }, 
+        {
+            "parm_desc" : "PLAN_HASH_VALUE",
+            "parm_name" : "PLAN_HASH_VALUE"
+        }, 
+        {
+            "parm_desc" : "SQL_TEXT",
+            "parm_name" : "SQL_TEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_FULLTEXT",
+            "parm_name" : "SQL_FULLTEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_PLAN",
+            "parm_name" : "SQL_PLAN"
+        }, 
+        {
+            "parm_desc" : "使用的cpu资源",
+            "parm_name" : "STAT_CPU"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "STAT_EXEC"
+        }, 
+        {
+            "parm_desc" : "使用buffer的资源",
+            "parm_name" : "STAT_BUFFER_GETS"
+        }, 
+        {
+            "parm_desc" : "物理读情况",
+            "parm_name" : "STAT_DISK_READS"
+        }, 
+        {
+            "parm_desc" : "解析的时间",
+            "parm_name" : "STAT_ELAPSED_TIME"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd" : "db.@sql@.find({\"OPERATION\":\"PX COORDINATOR\",\"USERNAME\":\"@username@\",\"ETL_DATE\":\"@etl_date@\"}).forEach(function(x){db.@tmp@.save({\"SQL_ID\":x.SQL_ID,\"PLAN_HASH_VALUE\":x.PLAN_HASH_VALUE,\"OBJECT_NAME\":x.OBJECT_NAME,\"ID\":x.ID,\"COST\":x.COST,\"COUNT\":\"\"});})",
+    "rule_desc" : "存在并行访问特征",
+    "rule_name" : "SQL_PARALLEL_FETCH",
+    "rule_status" : "ON",
+    "rule_summary" : "存在并行访问特征",
+    "rule_type" : "SQLPLAN",
+    "rule_type_detail" : "",
+    "solution" : [ 
+        "取消表、索引、sql中的并行设置"
+    ],
+    "weight" : 1.0
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : [ 
+        "SQL_ID", 
+        "PLAN_HASH_VALUE"
+    ],
+    "input_parms" : [ 
+        {
+            "parm_desc" : "表物理大小",
+            "parm_name" : "table_phy_size",
+            "parm_unit" : "MB",
+            "parm_value" : 1024.0
+        }, 
+        {
+            "parm_desc" : "表行数",
+            "parm_name" : "table_row_num",
+            "parm_unit" : "",
+            "parm_value" : 5000
+        }
+    ],
+    "max_score" : 20,
+    "obj_info_type" : "TABLE",
+    "output_parms" : [ 
+        {
+            "parm_desc" : "SQL_ID",
+            "parm_name" : "SQL_ID"
+        }, 
+        {
+            "parm_desc" : "PLAN_HASH_VALUE",
+            "parm_name" : "PLAN_HASH_VALUE"
+        }, 
+        {
+            "parm_desc" : "SQL_TEXT",
+            "parm_name" : "SQL_TEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_FULLTEXT",
+            "parm_name" : "SQL_FULLTEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_PLAN",
+            "parm_name" : "SQL_PLAN"
+        }, 
+        {
+            "parm_desc" : "使用的cpu资源",
+            "parm_name" : "STAT_CPU"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "STAT_EXEC"
+        }, 
+        {
+            "parm_desc" : "使用buffer的资源",
+            "parm_name" : "STAT_BUFFER_GETS"
+        }, 
+        {
+            "parm_desc" : "物理读情况",
+            "parm_name" : "STAT_DISK_READS"
+        }, 
+        {
+            "parm_desc" : "解析的时间",
+            "parm_name" : "STAT_ELAPSED_TIME"
+        }, 
+        {
+            "parm_desc" : "名称",
+            "parm_name" : "obj_info_name"
+        }, 
+        {
+            "parm_desc" : "物理大小",
+            "parm_name" : "obj_info_phy_size"
+        }, 
+        {
+            "parm_desc" : "记录数",
+            "parm_name" : "obj_info_num"
+        }, 
+        {
+            "parm_desc" : "表类型",
+            "parm_name" : "obj_info_type"
+        }, 
+        {
+            "parm_desc" : "最后一次分析的时间",
+            "parm_name" : "obj_info_last_analyzed"
+        }, 
+        {
+            "parm_desc" : "最后一次DDL的时间",
+            "parm_name" : "obj_info_ddl_time"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd" : "db.@sql@.find({$or: [{\"OPERATION\":/NESTED LOOP/},{\"OPERATION\":/FILTER/}],\"USERNAME\":\"@username@\",\"ETL_DATE\":\"@etl_date@\"}).forEach(function(x){db.@tmp@.save({SQL_ID:x.SQL_ID,PLAN_HASH_VALUE:x.PLAN_HASH_VALUE,PARENT_ID:x.ID,USERNAME:x.USERNAME,ETL_DATE:x.ETL_DATE});});db.@tmp@.find().forEach(  function(x){  db.sqlplan.find({SQL_ID:x.SQL_ID,PLAN_HASH_VALUE:x.PLAN_HASH_VALUE,PARENT_ID:x.PARENT_ID,USERNAME:x.USERNAME,ETL_DATE:x.ETL_DATE}).forEach(function(y){db.@tmp1@.save({SQL_ID:y.SQL_ID,PLAN_HASH_VALUE:y.PLAN_HASH_VALUE,OBJECT_NAME:y.OBJECT_NAME,ID:y.ID,PARENT_ID:y.PARENT_ID,OPERATION:y.OPERATION,OPTIONS:y.OPTIONS,USERNAME:y.USERNAME,ETL_DATE:y.ETL_DATE})});});db.@tmp@.drop();db.@tmp1@.aggregate([{$group:{_id:{PARENT_ID:\"$PARENT_ID\",SQL_ID:\"$SQL_ID\",PLAN_HASH_VALUE:\"$PLAN_HASH_VALUE\"},MAXID: {$max:\"$ID\"}}}]).forEach(function(z){db.sqlplan.find({SQL_ID:z._id.SQL_ID,PLAN_HASH_VALUE:z._id.PLAN_HASH_VALUE,$and:[{ID:z.MAXID},{ID:{$ne:2}}],\"USERNAME\":\"@username@\",\"ETL_DATE\":\"@etl_date@\",OPERATION:\"TABLE ACCESS\",OPTIONS:\"FULL\"}).forEach(function(y){if(db.obj_tab_info.findOne({\"OWNER\":y.OBJECT_OWNER,\"ETL_DATE\":y.ETL_DATE,\"TABLE_NAME\":y.OBJECT_NAME,$or: [{\"NUM_ROWS\":{$gt:@table_row_num@}},{\"PHY_SIZE(MB)\":{$gt:@table_phy_size@}}]}))db.@tmp@.save({\"SQL_ID\":y.SQL_ID,\"PLAN_HASH_VALUE\":y.PLAN_HASH_VALUE,\"OBJECT_NAME\":y.OBJECT_NAME,\"ID\":y.ID,\"COST\":y.COST,\"COUNT\":\"\"})});})",
+    "rule_desc" : "嵌套循环内层表访问方式为全表扫描",
+    "rule_name" : "LOOP_IN_TAB_FULL_SCAN",
+    "rule_status" : "ON",
+    "rule_summary" : "嵌套循环内层表访问方式为全表扫描",
+    "rule_type" : "SQLPLAN",
+    "rule_type_detail" : "",
+    "solution" : [ 
+        "关联列创建索引"
+    ],
+    "weight" : 1
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : [ 
+        "SQL_ID", 
+        "PLAN_HASH_VALUE"
+    ],
+    "input_parms" : [],
+    "max_score" : 20,
+    "obj_info_type" : "TABLE",
+    "output_parms" : [ 
+        {
+            "parm_desc" : "SQL_ID",
+            "parm_name" : "SQL_ID"
+        }, 
+        {
+            "parm_desc" : "PLAN_HASH_VALUE",
+            "parm_name" : "PLAN_HASH_VALUE"
+        }, 
+        {
+            "parm_desc" : "SQL_TEXT",
+            "parm_name" : "SQL_TEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_FULLTEXT",
+            "parm_name" : "SQL_FULLTEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_PLAN",
+            "parm_name" : "SQL_PLAN"
+        }, 
+        {
+            "parm_desc" : "使用的cpu资源",
+            "parm_name" : "STAT_CPU"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "STAT_EXEC"
+        }, 
+        {
+            "parm_desc" : "使用buffer的资源",
+            "parm_name" : "STAT_BUFFER_GETS"
+        }, 
+        {
+            "parm_desc" : "物理读情况",
+            "parm_name" : "STAT_DISK_READS"
+        }, 
+        {
+            "parm_desc" : "解析的时间",
+            "parm_name" : "STAT_ELAPSED_TIME"
+        }, 
+        {
+            "parm_desc" : "名称",
+            "parm_name" : "obj_info_name"
+        }, 
+        {
+            "parm_desc" : "物理大小",
+            "parm_name" : "obj_info_phy_size"
+        }, 
+        {
+            "parm_desc" : "记录数",
+            "parm_name" : "obj_info_num"
+        }, 
+        {
+            "parm_desc" : "表类型",
+            "parm_name" : "obj_info_type"
+        }, 
+        {
+            "parm_desc" : "最后一次分析的时间",
+            "parm_name" : "obj_info_last_analyzed"
+        }, 
+        {
+            "parm_desc" : "最后一次DDL的时间",
+            "parm_name" : "obj_info_ddl_time"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd" : "db.@sql@.find({FILTER_PREDICATES:/SYS_OP/,USERNAME:\"@username@\",ETL_DATE:\"@etl_date@\"}).forEach(function(x){db.@tmp@.save({SQL_ID:x.SQL_ID,PLAN_HASH_VALUE:x.PLAN_HASH_VALUE,OBJECT_NAME:x.OBJECT_NAME,ID:x.ID,COST:x.COST,COUNT:\"\"})})",
+    "rule_desc" : "隐式转换",
+    "rule_name" : "SQL_TO_CHANGE_TYPE",
+    "rule_status" : "ON",
+    "rule_summary" : "隐式转换",
+    "rule_type" : "SQLPLAN",
+    "rule_type_detail" : "",
+    "solution" : [ 
+        "1.显示转换", 
+        "2.选择合适的字段类型"
+    ],
+    "weight" : 0.5
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : [ 
+        "SQL_ID", 
+        "PLAN_HASH_VALUE"
+    ],
+    "input_parms" : [ 
+        {
+            "parm_desc" : "表嵌套的层次",
+            "parm_name" : "loop_num",
+            "parm_unit" : "",
+            "parm_value" : 3
+        }
+    ],
+    "max_score" : 5,
+    "obj_info_type" : "",
+    "output_parms" : [ 
+        {
+            "parm_desc" : "SQL_ID",
+            "parm_name" : "SQL_ID"
+        }, 
+        {
+            "parm_desc" : "PLAN_HASH_VALUE",
+            "parm_name" : "PLAN_HASH_VALUE"
+        }, 
+        {
+            "parm_desc" : "SQL_TEXT",
+            "parm_name" : "SQL_TEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_FULLTEXT",
+            "parm_name" : "SQL_FULLTEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_PLAN",
+            "parm_name" : "SQL_PLAN"
+        }, 
+        {
+            "parm_desc" : "使用的cpu资源",
+            "parm_name" : "STAT_CPU"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "STAT_EXEC"
+        }, 
+        {
+            "parm_desc" : "使用buffer的资源",
+            "parm_name" : "STAT_BUFFER_GETS"
+        }, 
+        {
+            "parm_desc" : "物理读情况",
+            "parm_name" : "STAT_DISK_READS"
+        }, 
+        {
+            "parm_desc" : "解析的时间",
+            "parm_name" : "STAT_ELAPSED_TIME"
+        }, 
+        {
+            "parm_desc" : "名称",
+            "parm_name" : "obj_info_name"
+        }, 
+        {
+            "parm_desc" : "物理大小",
+            "parm_name" : "obj_info_phy_size"
+        }, 
+        {
+            "parm_desc" : "记录数",
+            "parm_name" : "obj_info_num"
+        }, 
+        {
+            "parm_desc" : "表类型",
+            "parm_name" : "obj_info_type"
+        }, 
+        {
+            "parm_desc" : "最后一次分析的时间",
+            "parm_name" : "obj_info_last_analyzed"
+        }, 
+        {
+            "parm_desc" : "最后一次DDL的时间",
+            "parm_name" : "obj_info_ddl_time"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd" : "db.@sql@.group( { key:{\"USERNAME\":1,\"ETL_DATE\":1,\"SQL_ID\":1,\"PLAN_HASH_VALUE\":1}, cond:{\"USERNAME\":\"@username@\",\"ETL_DATE\":\"@etl_date@\",$or: [{\"OPERATION\":/NESTED LOOP/},{\"OPERATION\":/FILTER/}]}, reduce:function(curr,result){ result.count++; }, initial:{count:0} } ).forEach(function(x){db.@tmp1@.save({\"SQL_ID\":x.SQL_ID,\"PLAN_HASH_VALUE\":x.PLAN_HASH_VALUE,\"COUNT\":x.count})});db.@tmp1@.find({\"COUNT\":{$gte:\"@loop_num@\"}}).forEach(function(y){db.@tmp@.save({\"SQL_ID\":y.SQL_ID,\"PLAN_HASH_VALUE\":y.PLAN_HASH_VALUE,\"ID\":y.ID,\"COUNT\":x.COUNT,\"COST\":\"\",\"OBJECT_NAME\":\"\"})})",
+    "rule_desc" : "嵌套层次过深",
+    "rule_name" : "SQL_LOOP_NUM",
+    "rule_status" : "ON",
+    "rule_summary" : "嵌套层次过深",
+    "rule_type" : "SQLPLAN",
+    "rule_type_detail" : "",
+    "solution" : [ 
+        "改写sql逻辑减少表关联的数量"
+    ],
+    "weight" : 1
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 10.0,
+    "output_parms" : [ 
+        {
+            "parm_desc" : "CHECKSUM",
+            "parm_name" : "CHECKSUM"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "ts_cnt"
+        }, 
+        {
+            "parm_desc" : "平均执行时间",
+            "parm_name" : "query_time_avg"
+        }, 
+        {
+            "parm_desc" : "平均返回记录数",
+            "parm_name" : "rows_sent_avg"
+        }, 
+        {
+            "parm_desc" : "扫描命中率",
+            "parm_name" : "index_ratio"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd" : "db.sqlinfo.find({\"sqlplan_json.complex\":1}).forEach(function(y){db.@tmp@.save({\"checksum\" :y.checksum,\"ts_cnt\" :y.ts_cnt,\"query_time_avg\" :y.query_time_avg,\"rows_sent_avg\" :y.rows_sent_avg,\"index_ratio\" :y.index_ratio})})",
+    "rule_desc" : "complex_sql",
+    "rule_name" : "COMPLEX_SQL",
+    "rule_status" : "ON",
+    "rule_summary" : "",
+    "rule_type" : "SQLPLAN",
+    "solution" : [ 
+        "sql过于复杂，无法得到json格式执行计划，建议在逻辑和业务上避免此类复杂sql"
+    ],
+    "weight" : 0.1
+}
+
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 10.0,
+    "output_datas" : [ 
+        {
+            "parm_desc" : "CHECKSUM",
+            "parm_name" : "CHECKSUM"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "ts_cnt"
+        }, 
+        {
+            "parm_desc" : "平均执行时间",
+            "parm_name" : "query_time_avg"
+        }, 
+        {
+            "parm_desc" : "平均返回记录数",
+            "parm_name" : "rows_sent_avg"
+        }, 
+        {
+            "parm_desc" : "扫描命中率",
+            "parm_name" : "index_ratio"
+        }, 
+        {
+            "parm_desc" : "锁定时间总和",
+            "parm_name" : "Lock_time_sum"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd" : "db.sqlinfo.find({\"Lock_time_sum\" : {$gt:60}}).forEach(function(y){db.@tmp@.save({\"checksum\" :y.checksum,\"ts_cnt\" :y.ts_cnt,\"query_time_avg\" :y.query_time_avg,\"rows_sent_avg\" :y.rows_sent_avg,\"index_ratio\" :y.index_ratio, \"Lock_time_sum\" :y.Lock_time_sum})})",
+    "rule_desc" : "Lock_time_sum",
+    "rule_name" : "LOCK_TIME_SUM",
+    "rule_status" : "ON",
+    "rule_summary" : "锁定时间过长",
+    "rule_type" : "SQLSTAT",
+    "solution" : [ 
+        "对sql消耗资源评估是否合理，能否优化"
+    ],
+    "weight" : 0.1
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 10.0,
+    "output_datas" : [ 
+        {
+            "parm_desc" : "CHECKSUM",
+            "parm_name" : "CHECKSUM"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "ts_cnt"
+        }, 
+        {
+            "parm_desc" : "平均执行时间",
+            "parm_name" : "query_time_avg"
+        }, 
+        {
+            "parm_desc" : "平均返回记录数",
+            "parm_name" : "rows_sent_avg"
+        }, 
+        {
+            "parm_desc" : "扫描命中率",
+            "parm_name" : "index_ratio"
+        }, 
+        {
+            "parm_desc" : "锁定时间总和",
+            "parm_name" : "Lock_time_sum"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd" : "db.sqlinfo.find({\"index_ratio\" : {$gt:10000}}).forEach(function(y){db.@tmp@.save({\"checksum\" :y.checksum,\"ts_cnt\" :y.ts_cnt,\"query_time_avg\" :y.query_time_avg,\"rows_sent_avg\" :y.rows_sent_avg,\"index_ratio\" :y.index_ratio, \"Lock_time_sum\" :y.Lock_time_sum})})",
+    "rule_desc" : "index_ratio",
+    "rule_name" : "INDEX_RATIO",
+    "rule_status" : "ON",
+    "rule_summary" : "扫描命中率过低",
+    "rule_type" : "SQLSTAT",
+    "solution" : [ 
+        "对sql消耗资源评估是否合理，能否优化"
+    ],
+    "weight" : 0.1
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : [ 
+        "SQL_ID", 
+        "PLAN_HASH_VALUE"
+    ],
+    "input_parms" : [ 
+        {
+            "parm_desc" : "buffer gets",
+            "parm_name" : "buffer_gets",
+            "parm_unit" : "bytes",
+            "parm_value" : 1000
+        }
+    ],
+    "max_score" : 10,
+    "obj_info_type" : "",
+    "output_parms" : [ 
+        {
+            "parm_desc" : "SQL_ID",
+            "parm_name" : "SQL_ID"
+        }, 
+        {
+            "parm_desc" : "PLAN_HASH_VALUE",
+            "parm_name" : "PLAN_HASH_VALUE"
+        }, 
+        {
+            "parm_desc" : "SQL_TEXT",
+            "parm_name" : "SQL_TEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_FULLTEXT",
+            "parm_name" : "SQL_FULLTEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_PLAN",
+            "parm_name" : "SQL_PLAN"
+        }, 
+        {
+            "parm_desc" : "使用的cpu资源",
+            "parm_name" : "STAT_CPU"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "STAT_EXEC"
+        }, 
+        {
+            "parm_desc" : "使用buffer的资源",
+            "parm_name" : "STAT_BUFFER_GETS"
+        }, 
+        {
+            "parm_desc" : "物理读情况",
+            "parm_name" : "STAT_DISK_READS"
+        }, 
+        {
+            "parm_desc" : "解析的时间",
+            "parm_name" : "STAT_ELAPSED_TIME"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd" : "db.@sql@.find({\"PER_BUFFER_GETS\":{$gte:@buffer_gets@},\"USERNAME\":\"@username@\",\"ETL_DATE\":\"@etl_date@\"}).forEach(function(x){db.@tmp@.save({\"SQL_ID\":x.SQL_ID,\"PLAN_HASH_VALUE\":x.PLAN_HASH_VALUE})})",
+    "rule_desc" : "sql buffer get过大",
+    "rule_name" : "SQL_BUFFER_GETS",
+    "rule_status" : "ON",
+    "rule_summary" : "sql buffer get过大",
+    "rule_type" : "SQLSTAT",
+    "rule_type_detail" : "",
+    "solution" : [ 
+        "对sql消耗资源评估是否合理，能否优化"
+    ],
+    "weight" : 0.1
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : [ 
+        "SQL_ID", 
+        "PLAN_HASH_VALUE"
+    ],
+    "input_parms" : [ 
+        {
+            "parm_desc" : "子游标的数量",
+            "parm_name" : "cursor_num",
+            "parm_unit" : "",
+            "parm_value" : 30
+        }
+    ],
+    "max_score" : 10,
+    "obj_info_type" : "",
+    "output_parms" : [ 
+        {
+            "parm_desc" : "SQL_ID",
+            "parm_name" : "SQL_ID"
+        }, 
+        {
+            "parm_desc" : "PLAN_HASH_VALUE",
+            "parm_name" : "PLAN_HASH_VALUE"
+        }, 
+        {
+            "parm_desc" : "SQL_TEXT",
+            "parm_name" : "SQL_TEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_FULLTEXT",
+            "parm_name" : "SQL_FULLTEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_PLAN",
+            "parm_name" : "SQL_PLAN"
+        }, 
+        {
+            "parm_desc" : "使用的cpu资源",
+            "parm_name" : "STAT_CPU"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "STAT_EXEC"
+        }, 
+        {
+            "parm_desc" : "使用buffer的资源",
+            "parm_name" : "STAT_BUFFER_GETS"
+        }, 
+        {
+            "parm_desc" : "物理读情况",
+            "parm_name" : "STAT_DISK_READS"
+        }, 
+        {
+            "parm_desc" : "解析的时间",
+            "parm_name" : "STAT_ELAPSED_TIME"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd" : "db.@sql@.find({\"VERSION_COUNT\":{$gte:@cursor_num@},\"USERNAME\":\"@username@\",\"ETL_DATE\":\"@etl_date@\"}).forEach(function(x){db.@tmp@.save({\"SQL_ID\":x.SQL_ID,\"PLAN_HASH_VALUE\":x.PLAN_HASH_VALUE})})",
+    "rule_desc" : "子游标过多",
+    "rule_name" : "SQL_SUB_CURSOR_COUNT",
+    "rule_status" : "ON",
+    "rule_summary" : "子游标过多",
+    "rule_type" : "SQLSTAT",
+    "rule_type_detail" : "SQLSTAT_CURSOR",
+    "solution" : [ 
+        "找dba分析过多原因"
+    ],
+    "weight" : "0.1"
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : [ 
+        "SQL_ID", 
+        "PLAN_HASH_VALUE"
+    ],
+    "input_parms" : [ 
+        {
+            "parm_desc" : "cpu时间",
+            "parm_name" : "cpu_time",
+            "parm_unit" : "秒",
+            "parm_value" : 100
+        }
+    ],
+    "max_score" : 10,
+    "obj_info_type" : "",
+    "output_parms" : [ 
+        {
+            "parm_desc" : "SQL_ID",
+            "parm_name" : "SQL_ID"
+        }, 
+        {
+            "parm_desc" : "PLAN_HASH_VALUE",
+            "parm_name" : "PLAN_HASH_VALUE"
+        }, 
+        {
+            "parm_desc" : "SQL_TEXT",
+            "parm_name" : "SQL_TEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_FULLTEXT",
+            "parm_name" : "SQL_FULLTEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_PLAN",
+            "parm_name" : "SQL_PLAN"
+        }, 
+        {
+            "parm_desc" : "使用的cpu资源",
+            "parm_name" : "STAT_CPU"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "STAT_EXEC"
+        }, 
+        {
+            "parm_desc" : "使用buffer的资源",
+            "parm_name" : "STAT_BUFFER_GETS"
+        }, 
+        {
+            "parm_desc" : "物理读情况",
+            "parm_name" : "STAT_DISK_READS"
+        }, 
+        {
+            "parm_desc" : "解析的时间",
+            "parm_name" : "STAT_ELAPSED_TIME"
+        }
+    ],
+    "rule_complexity" : "simple",
+    "rule_cmd" : "db.@sql@.find({\"PER_CPU_TIME\":{$gte:@cpu_time@},\"USERNAME\":\"@username@\",\"ETL_DATE\":\"@etl_date@\"}).forEach(function(x){db.@tmp@.save({\"SQL_ID\":x.SQL_ID,\"PLAN_HASH_VALUE\":x.PLAN_HASH_VALUE})})",
+    "rule_desc" : "cpu时间过长",
+    "rule_name" : "SQL_CPU_TIME",
+    "rule_status" : "ON",
+    "rule_summary" : "cpu时间过长",
+    "rule_type" : "SQLSTAT",
+    "rule_type_detail" : "",
+    "solution" : [ 
+        "对sql消耗资源评估是否合理，能否优化"
+    ],
+    "weight" : 0.1
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : [ 
+        "SQL_ID", 
+        "PLAN_HASH_VALUE"
+    ],
+    "input_parms" : [ 
+        {
+            "parm_desc" : "sql执行次数",
+            "parm_name" : "sql_count_num",
+            "parm_unit" : "次数",
+            "parm_value" : 100.0
+        }
+    ],
+    "max_score" : "10",
+    "obj_info_type" : "",
+    "output_parms" : [ 
+        {
+            "parm_desc" : "SQL_ID",
+            "parm_name" : "SQL_ID"
+        }, 
+        {
+            "parm_desc" : "PLAN_HASH_VALUE",
+            "parm_name" : "PLAN_HASH_VALUE"
+        }, 
+        {
+            "parm_desc" : "SQL_TEXT",
+            "parm_name" : "SQL_TEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_FULLTEXT",
+            "parm_name" : "SQL_FULLTEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_PLAN",
+            "parm_name" : "SQL_PLAN"
+        }, 
+        {
+            "parm_desc" : "使用的cpu资源",
+            "parm_name" : "STAT_CPU"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "STAT_EXEC"
+        }, 
+        {
+            "parm_desc" : "使用buffer的资源",
+            "parm_name" : "STAT_BUFFER_GETS"
+        }, 
+        {
+            "parm_desc" : "物理读情况",
+            "parm_name" : "STAT_DISK_READS"
+        }, 
+        {
+            "parm_desc" : "解析的时间",
+            "parm_name" : "STAT_ELAPSED_TIME"
+        }
+    ],
+    "rule_complexity" : "simple",
+    "rule_cmd" : "db.@sql@.find({\"EXECUTIONS\":{$gte:@sql_count_num@},\"USERNAME\":\"@username@\",\"ETL_DATE\":\"@etl_date@\"}).forEach(function(x){db.@tmp@.save({\"SQL_ID\":x.SQL_ID,\"PLAN_HASH_VALUE\":x.PLAN_HASH_VALUE})})",
+    "rule_desc" : "sql执行次数",
+    "rule_name" : "SQL_EXECUTIONS",
+    "rule_status" : "ON",
+    "rule_summary" : "sql执行次数",
+    "rule_type" : "SQLSTAT",
+    "solution" : [ 
+        "对sql执行次数评估是否合理，能否优化"
+    ],
+    "weight" : 0.1
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : [ 
+        "SQL_ID", 
+        "PLAN_HASH_VALUE"
+    ],
+    "input_parms" : [ 
+        {
+            "parm_desc" : "执行时间",
+            "parm_name" : "elapsed_time",
+            "parm_unit" : "秒",
+            "parm_value" : 100
+        }
+    ],
+    "max_score" : 10,
+    "obj_info_type" : "",
+    "output_parms" : [ 
+        {
+            "parm_desc" : "SQL_ID",
+            "parm_name" : "SQL_ID"
+        }, 
+        {
+            "parm_desc" : "PLAN_HASH_VALUE",
+            "parm_name" : "PLAN_HASH_VALUE"
+        }, 
+        {
+            "parm_desc" : "SQL_TEXT",
+            "parm_name" : "SQL_TEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_FULLTEXT",
+            "parm_name" : "SQL_FULLTEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_PLAN",
+            "parm_name" : "SQL_PLAN"
+        }, 
+        {
+            "parm_desc" : "使用的cpu资源",
+            "parm_name" : "STAT_CPU"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "STAT_EXEC"
+        }, 
+        {
+            "parm_desc" : "使用buffer的资源",
+            "parm_name" : "STAT_BUFFER_GETS"
+        }, 
+        {
+            "parm_desc" : "物理读情况",
+            "parm_name" : "STAT_DISK_READS"
+        }, 
+        {
+            "parm_desc" : "解析的时间",
+            "parm_name" : "STAT_ELAPSED_TIME"
+        }
+    ],
+    "rule_complexity" : "simple",
+    "rule_cmd" : "db.@sql@.find({\"PER_ELAPSED_TIME\":{$gte:@elapsed_time@},\"USERNAME\":\"@username@\",\"ETL_DATE\":\"@etl_date@\"}).forEach(function(x){db.@tmp@.save({\"SQL_ID\":x.SQL_ID,\"PLAN_HASH_VALUE\":x.PLAN_HASH_VALUE})})",
+    "rule_desc" : "sql执行时间过长",
+    "rule_name" : "SQL_ELAPSED_TIME",
+    "rule_status" : "ON",
+    "rule_summary" : "sql执行时间过长",
+    "rule_type" : "SQLSTAT",
+    "rule_type_detail" : "",
+    "solution" : [ 
+        "对sql执行次数评估是否合理，能否优化"
+    ],
+    "weight" : 0.1
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : [ 
+        "SQL_ID", 
+        "PLAN_HASH_VALUE"
+    ],
+    "input_parms" : [ 
+        {
+            "parm_desc" : "disk_reads",
+            "parm_name" : "disk_reads",
+            "parm_unit" : "bytes",
+            "parm_value" : 1000
+        }
+    ],
+    "max_score" : 10,
+    "obj_info_type" : "",
+    "output_parms" : [ 
+        {
+            "parm_desc" : "SQL_ID",
+            "parm_name" : "SQL_ID"
+        }, 
+        {
+            "parm_desc" : "PLAN_HASH_VALUE",
+            "parm_name" : "PLAN_HASH_VALUE"
+        }, 
+        {
+            "parm_desc" : "SQL_TEXT",
+            "parm_name" : "SQL_TEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_FULLTEXT",
+            "parm_name" : "SQL_FULLTEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_PLAN",
+            "parm_name" : "SQL_PLAN"
+        }, 
+        {
+            "parm_desc" : "使用的cpu资源",
+            "parm_name" : "STAT_CPU"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "STAT_EXEC"
+        }, 
+        {
+            "parm_desc" : "使用buffer的资源",
+            "parm_name" : "STAT_BUFFER_GETS"
+        }, 
+        {
+            "parm_desc" : "物理读情况",
+            "parm_name" : "STAT_DISK_READS"
+        }, 
+        {
+            "parm_desc" : "解析的时间",
+            "parm_name" : "STAT_ELAPSED_TIME"
+        }
+    ],
+    "rule_complexity" : "simple",
+    "rule_cmd" : "db.@sql@.find({\"PER_DISK_READS\":{$gte:@disk_reads@},\"USERNAME\":\"@username@\",\"ETL_DATE\":\"@etl_date@\"}).forEach(function(x){db.@tmp@.save({\"SQL_ID\":x.SQL_ID,\"PLAN_HASH_VALUE\":x.PLAN_HASH_VALUE})})",
+    "rule_desc" : "disk_reads量大",
+    "rule_name" : "SQL_DISK_READS",
+    "rule_status" : "ON",
+    "rule_summary" : "disk_reads量大",
+    "rule_type" : "SQLSTAT",
+    "rule_type_detail" : "",
+    "solution" : [ 
+        "对sql消耗资源评估是否合理，能否优化"
+    ],
+    "weight" : 0.1
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : [ 
+        "SQL_ID", 
+        "PLAN_HASH_VALUE"
+    ],
+    "input_parms" : [ 
+        {
+            "parm_desc" : "direct_writes",
+            "parm_name" : "direct_writes",
+            "parm_unit" : "bytes",
+            "parm_value" : 1000
+        }
+    ],
+    "max_score" : 10,
+    "obj_info_type" : "",
+    "output_parms" : [ 
+        {
+            "parm_desc" : "SQL_ID",
+            "parm_name" : "SQL_ID"
+        }, 
+        {
+            "parm_desc" : "PLAN_HASH_VALUE",
+            "parm_name" : "PLAN_HASH_VALUE"
+        }, 
+        {
+            "parm_desc" : "SQL_TEXT",
+            "parm_name" : "SQL_TEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_FULLTEXT",
+            "parm_name" : "SQL_FULLTEXT"
+        }, 
+        {
+            "parm_desc" : "SQL_PLAN",
+            "parm_name" : "SQL_PLAN"
+        }, 
+        {
+            "parm_desc" : "使用的cpu资源",
+            "parm_name" : "STAT_CPU"
+        }, 
+        {
+            "parm_desc" : "执行次数",
+            "parm_name" : "STAT_EXEC"
+        }, 
+        {
+            "parm_desc" : "使用buffer的资源",
+            "parm_name" : "STAT_BUFFER_GETS"
+        }, 
+        {
+            "parm_desc" : "物理读情况",
+            "parm_name" : "STAT_DISK_READS"
+        }, 
+        {
+            "parm_desc" : "解析的时间",
+            "parm_name" : "STAT_ELAPSED_TIME"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd" : "db.@sql@.find({\"PER_DIRECT_WRITES\":{$gte:@direct_writes@},\"USERNAME\":\"@username@\",\"ETL_DATE\":\"@etl_date@\"}).forEach(function(x){db.@tmp@.save({\"SQL_ID\":x.SQL_ID,\"PLAN_HASH_VALUE\":x.PLAN_HASH_VALUE})})",
+    "rule_desc" : "direct_wirtes 量大",
+    "rule_name" : "SQL_DIRECT_WRITES",
+    "rule_status" : "ON",
+    "rule_summary" : "direct_wirtes 量大",
+    "rule_type" : "SQLSTAT",
+    "rule_type_detail" : "",
+    "solution" : [ 
+        "对sql消耗资源评估是否合理，能否优化"
+    ],
+    "weight" : 0.1
+}
+
+{
+    "db_type" : "O",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_desc" : "出现union.防止出现不必要的排序动作",
+    "rule_name" : "UNION",
+    "rule_complexity": "complex",
+    "rule_cmd": "default",
+    "rule_status" : "ON",
+    "rule_summary" : "出现union,防止出现不必要的排序动作",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "改写unionall和sql逻辑中去重"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_complexity": "simple",
+    "rule_cmd": "(cross join)|(outer join)",
+    "rule_desc" : "存在全连接或外连接,cross join或outer join情况",
+    "rule_name" : "BAD_JOIN",
+    "rule_status" : "ON",
+    "rule_summary" : "存在全连接或外连接,cross join或outer join情况",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "改写为innerjoin"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_complexity": "complex",
+    "rule_cmd": "default",
+    "rule_desc" : "delete或update中必须出现where子句，防止出现意外的全部删除或更新动作",
+    "rule_name" : "DML_ALLDATA",
+    "rule_status" : "ON",
+    "rule_summary" : "delete或update中必须出现where子句，防止出现意外的全部删除或更新动作",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "1.建议加where条件", 
+        "2.全表删除用truncate"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_desc" : "存在全连接或外连接,cross join或outer join情况",
+    "rule_complexity": "simple",
+    "rule_cmd": "(cross join)|(outer join)",
+    "rule_name" : "BAD_JOIN",
+    "rule_status" : "ON",
+    "rule_summary" : "存在全连接或外连接,cross join或outer join情况",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "改写为innerjoin"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : "",
+    "input_parms" : [ 
+        {
+            "parm_desc" : "SQL字符数量",
+            "parm_name" : "char_num",
+            "parm_value" : 1000,
+            "parm_unit": ""
+        }
+    ],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_desc" : "SQL文本过长",
+    "rule_name" : "LONG_TEXT",
+    "rule_complexity": "complex",
+    "rule_cmd": "default",
+    "rule_status" : "ON",
+    "rule_summary" : "SQL文本过长",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "sql改写为精简语句"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_desc" : "查询字段引用函数",
+    "rule_complexity": "simple",
+    "rule_cmd": "\\)\\s?[<>=]{1,2}",
+    "rule_name" : "WHERE_FUNC",
+    "rule_status" : "ON",
+    "rule_summary" : "禁止在查询字段中引用函数",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "1.函数写在表达式右边", 
+        "2.应用程序实现函数功能"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : "",
+    "input_parms" : [ 
+        {
+            "parm_desc" : "绑定变量个数",
+            "parm_name" : "num_of_bound_var",
+            "parm_value" : 50,
+            "parm_unit": ""
+        }
+    ],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_complexity": "complex",
+    "rule_cmd": "default",
+    "rule_desc" : "绑定变量过多",
+    "rule_name" : "TOOMANY_BIND",
+    "rule_status" : "ON",
+    "rule_summary" : "绑定变量过多",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "减少绑定变量"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : "",
+    "input_parms" : [ 
+        {
+            "parm_desc" : "inlist元素个数",
+            "parm_name" : "inlist_num",
+            "parm_value" : 20,
+            "parm_unit": ""
+        }
+    ],
+    "max_score" : 20,
+    "rule_complexity": "complex",
+    "rule_cmd": "default",
+    "output_parms" : [],
+    "rule_desc" : "IN List元素过多",
+    "rule_name" : "TOOMANY_IN_LIST",
+    "rule_status" : "ON",
+    "rule_summary" : "IN List元素过多",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "改用临时表存入变量"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_complexity": "complex",
+    "rule_cmd": "default",
+    "rule_desc" : "重复查询子句",
+    "rule_name" : "SUBQUERY_REP",
+    "rule_status" : "ON",
+    "rule_summary" : "禁止使用重复的查询子句，应使用with as替换子句(仅限Oracle)来提升SQL执行效率",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "1.withas", 
+        "2.改写sql避免重复查询"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [ 
+        {
+            "parm_desc" : "or个数",
+            "parm_name" : "or_num",
+            "parm_value" : 5,
+            "parm_unit": ""
+        }
+    ],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_desc" : "多个过滤条件通过or连接",
+    "rule_complexity": "complex",
+    "rule_cmd": "default",
+    "rule_name" : "TOOMANY_OR",
+    "rule_status" : "ON",
+    "rule_summary" : "多个过滤条件通过or连接,防止优化器出现选择异常",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "改用临时表存入变量"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_complexity": "simple",
+    "rule_cmd": "like .\\%",
+    "rule_desc" : "谓词条件使用like %xxx,无法使用索引",
+    "rule_name" : "LIKE_UNINDEX",
+    "rule_status" : "ON",
+    "rule_summary" : "谓词条件使用like %xxx,无法使用索引",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "从业务角度出发，分析是否可使用精确运算符或类似like'xx%'"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_desc" : "谓词中存在负向操作符,!=,<>,!<,!>,not exists,not",
+    "rule_complexity": "simple",
+    "rule_cmd": "(!=)|(<>)|(!>)|(!<)",
+    "rule_name" : "WHERE_NOT",
+    "rule_status" : "ON",
+    "rule_summary" : "谓词中存在负向操作符,!=,<>,!<,!>,not exists,not",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "1.如果列值是连续，可把否定操作，更改为两个区间", 
+        "2.不建议使用不等值运算"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_complexity": "complex",
+    "rule_cmd": "default",
+    "rule_desc" : "delete或update中必须出现where子句，防止出现意外的全部删除或更新动作",
+    "rule_name" : "DML_ALLDATA",
+    "rule_status" : "ON",
+    "rule_summary" : "delete或update中必须出现where子句，防止出现意外的全部删除或更新动作",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "1.建议加where条件", 
+        "2.全表删除用truncate"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_complexity": "simple",
+    "rule_cmd": "(select \\*)|(select .*\\.\\*)",
+    "rule_desc" : "禁止使用select *，必须明确选择所需的列。",
+    "rule_name" : "SELECT_ANY",
+    "rule_status" : "ON",
+    "rule_summary" : "禁止使用select *，必须明确选择所需的列",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "使用明确的列"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_desc" : "select段出现子查询",
+    "rule_name" : "SUBQUERY_SELECT",
+    "rule_complexity": "complex",
+    "rule_cmd": "default",
+    "rule_status" : "OFF",
+    "rule_summary" : "select段出现子查询",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "改写为表关联"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_complexity": "complex",
+    "rule_cmd": "default",
+    "rule_desc" : "having段出现子查询",
+    "rule_name" : "SUBQUERY_HAVING",
+    "rule_status" : "OFF",
+    "rule_summary" : "having段出现子查询",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "改写为表关联"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [ 
+        {
+            "parm_desc" : "inlist元素个数",
+            "parm_name" : "inlist_num",
+            "parm_value" : 20,
+            "parm_unit": ""
+        }
+    ],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_desc" : "IN List元素过多",
+    "rule_name" : "TOOMANY_IN_LIST",
+    "rule_complexity": "complex",
+    "rule_cmd": "default",
+    "rule_status" : "ON",
+    "rule_summary" : "IN List元素过多",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "改用临时表存入变量"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [ 
+        {
+            "parm_desc" : "SQL字符数量",
+            "parm_name" : "char_num",
+            "parm_value" : 1000,
+            "parm_unit": ""
+        }
+    ],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_desc" : "SQL文本过长",
+    "rule_name" : "LONG_TEXT",
+    "rule_complexity": "complex",
+    "rule_cmd": "default",
+    "rule_status" : "ON",
+    "rule_summary" : "SQL文本过长",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "sql改写为精简语句"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_complexity": "complex",
+    "rule_cmd": "default",
+    "rule_desc" : "重复查询子句",
+    "rule_name" : "SUBQUERY_REP",
+    "rule_status" : "ON",
+    "rule_summary" : "禁止使用重复的查询子句，应使用with as替换子句(仅限Oracle)来提升SQL执行效率",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "1.withas", 
+        "2.改写sql避免重复查询"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_desc" : "where段出现子查询",
+    "rule_name" : "SUBQUERY_WHERE",
+    "rule_complexity": "complex",
+    "rule_cmd": "",
+    "rule_status" : "OFF",
+    "rule_summary" : "where段出现子查询",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "改写为表关联"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_desc" : "delete或update中出现order by子句,防止删除或更新过程中出现不必要的排序",
+    "rule_name" : "DML_SORT",
+    "rule_complexity": "simple",
+    "rule_cmd": "(\\s)?((update )|(delete )).*order by",
+    "rule_status" : "ON",
+    "rule_summary" : "delete或update中出现order by子句,防止删除或更新过程中出现不必要的排序",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "dml操作不需排序"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_desc" : "谓词中存在负向操作符,!=,<>,!<,!>,not exists,not",
+    "rule_complexity": "simple",
+    "rule_cmd": "(!=)|(<>)|(!>)|(!<)",
+    "rule_name" : "WHERE_NOT",
+    "rule_status" : "ON",
+    "rule_summary" : "谓词中存在负向操作符,!=,<>,!<,!>,not exists,not",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "1.如果列值是连续，可把否定操作，更改为两个区间", 
+        "2.不建议使用不等值运算"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : "",
+    "input_parms" : [ 
+        {
+            "parm_desc" : "or个数",
+            "parm_name" : "or_num",
+            "parm_value" : 5,
+            "parm_unit": ""
+        }
+    ],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_desc" : "多个过滤条件通过or连接",
+    "rule_complexity": "complex",
+    "rule_cmd": "default",
+    "rule_name" : "TOOMANY_OR",
+    "rule_status" : "ON",
+    "rule_summary" : "多个过滤条件通过or连接,防止优化器出现选择异常",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "改用临时表存入变量"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_complexity": "simple",
+    "rule_cmd": "(select \\*)|(select .*\\.\\*)",
+    "rule_desc" : "禁止使用select *，必须明确选择所需的列。",
+    "rule_name" : "SELECT_ANY",
+    "rule_status" : "ON",
+    "rule_summary" : "禁止使用select *，必须明确选择所需的列",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "使用明确的列"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_complexity": "simple",
+    "rule_cmd": "like .\\%",
+    "rule_desc" : "谓词条件使用like %xxx,无法使用索引",
+    "rule_name" : "LIKE_UNINDEX",
+    "rule_status" : "ON",
+    "rule_summary" : "谓词条件使用like %xxx,无法使用索引",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "从业务角度出发，分析是否可使用精确运算符或类似like'xx%'"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_complexity": "complex",
+    "rule_cmd": "default",
+    "rule_desc" : "having段出现子查询",
+    "rule_name" : "SUBQUERY_HAVING",
+    "rule_status" : "OFF",
+    "rule_summary" : "having段出现子查询",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "改写为表关联"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_desc" : "delete或update中出现order by子句,防止删除或更新过程中出现不必要的排序",
+    "rule_name" : "DML_SORT",
+    "rule_complexity": "simple",
+    "rule_cmd": "(\\s)?((update )|(delete )).*order by",
+    "rule_status" : "ON",
+    "rule_summary" : "delete或update中出现order by子句,防止删除或更新过程中出现不必要的排序",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "dml操作不需排序"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_desc" : "select段出现子查询",
+    "rule_name" : "SUBQUERY_SELECT",
+    "rule_complexity": "complex",
+    "rule_cmd": "default",
+    "rule_status" : "OFF",
+    "rule_summary" : "select段出现子查询",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "改写为表关联"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_desc" : "出现union.防止出现不必要的排序动作",
+    "rule_name" : "UNION",
+    "rule_complexity": "complex",
+    "rule_cmd": "default",
+    "rule_status" : "ON",
+    "rule_summary" : "出现union,防止出现不必要的排序动作",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "改写unionall和sql逻辑中去重"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_desc" : "查询字段引用函数",
+    "rule_complexity": "simple",
+    "rule_cmd": "\\)\\s?[<>=]{1,2}",
+    "rule_name" : "WHERE_FUNC",
+    "rule_status" : "ON",
+    "rule_summary" : "禁止在查询字段中引用函数",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "1.函数写在表达式右边", 
+        "2.应用程序实现函数功能"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_desc" : "from段出现子查询",
+    "rule_complexity": "complex",
+    "rule_cmd": "default",
+    "rule_name" : "SUBQUERY_FROM",
+    "rule_status" : "OFF",
+    "rule_summary" : "from段出现子查询",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "改写为表关联"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_desc" : "from段出现子查询",
+    "rule_complexity": "complex",
+    "rule_cmd": "default",
+    "rule_name" : "SUBQUERY_FROM",
+    "rule_status" : "OFF",
+    "rule_summary" : "from段出现子查询",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "改写为表关联"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "O",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 20,
+    "output_parms" : [],
+    "rule_desc" : "where段出现子查询",
+    "rule_name" : "SUBQUERY_WHERE",
+    "rule_complexity": "complex",
+    "rule_cmd": "default",
+    "rule_status" : "OFF",
+    "rule_summary" : "where段出现子查询",
+    "rule_type" : "TEXT",
+    "solution" : [ 
+        "改写为表关联"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" :6,
+    "output_parms" : [ 
+        {
+            "parm_desc" : "表名",
+            "parm_name" : "title1"
+        }, 
+        {
+            "parm_desc" : "字段名",
+            "parm_name" : "title2"
+        }, 
+        {
+            "parm_desc" : "数据类型",
+            "parm_name" : "title3"
+        }
+    ],
+    "rule_desc" : "大对象字段将影响存取性能、耗费较多空间，建议在数据库之外存储。",
+    "rule_complexity": "simple",
+    "rule_cmd": "SELECT TABLE_NAME,column_name , DATA_TYPE FROM information_schema.COLUMNS where TABLE_SCHEMA='@username@' and DATA_TYPE in ('blob','mediumblob','longblob','text','mediumblob','longtext') order by table_name",
+    "rule_name" : "EXIST_LOB_COLUMN",
+    "rule_status" : "ON",
+    "rule_summary" : "存在大对象字段",
+    "rule_type" : "OBJ",
+    "solution" : [ 
+        "建议在数据库外部进行存储大字段"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [ 
+        {
+            "parm_desc" : "提取做正则判断记录数上限",
+            "parm_name" : "num_row",
+            "parm_value" : 10000,
+            "parm_unit": ""
+        }
+    ],
+    "max_score" : 20,
+    "output_parms" : [ 
+        {
+            "parm_desc" : "表名",
+            "parm_name" : "title1"
+        }, 
+        {
+            "parm_desc" : "字段名",
+            "parm_name" : "title2"
+        }, 
+        {
+            "parm_desc" : "字段定义类型",
+            "parm_name" : "title3"
+        }, 
+        {
+            "parm_desc" : "字段实际类型",
+            "parm_name" : "title4"
+        }
+    ],
+    "rule_desc" : "根据字段保存内容判断，字段类型定义异常，建议选择适合的数据类型。",
+    "rule_complexity": "complex",
+    "rule_cmd": "default",
+    "rule_name" : "COLUMN_WRONG_TYPE",
+    "rule_status" : "ON",
+    "rule_summary" : "字段数据类型定义错误",
+    "rule_type" : "OBJ",
+    "solution" : [ 
+        "合理定义字段类型"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [ 
+        {
+            "parm_desc" : "字段长度(字节)",
+            "parm_name" : "primarykey_length",
+            "parm_value" : 16,
+            "parm_unit": ""
+        }
+    ],
+    "max_score" : 20,
+    "output_parms" : [ 
+        {
+            "parm_desc" : "表名",
+            "parm_name" : "table_name"
+        }, 
+        {
+            "parm_desc" : "主键字段<br>(如果有多个字段，逗号分开)",
+            "parm_name" : "primary_type"
+        }, 
+        {
+            "parm_desc" : "字段类型<br>(如果有多个字段，逗号分开)",
+            "parm_name" : "title3"
+        }, 
+        {
+            "parm_desc" : "字段总长度(字节)",
+            "parm_name" : "title4"
+        }
+    ],
+    "rule_desc" : "应控制主键字段长度，过长的主键字段会造成索引空间消耗过大。",
+    "rule_complexity": "complex",
+    "rule_cmd": "default",
+    "rule_name" : "TABLE_PRIMARYKEY_LENGTH",
+    "rule_status" : "ON",
+    "rule_summary" : "单表主键字段定义长度过长",
+    "rule_type" : "OBJ",
+    "solution" : [ 
+        "主键设计是否合理"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 10,
+    "output_parms" : [ 
+        {
+            "parm_desc" : "表名",
+            "parm_name" : "table_name"
+        }
+    ],
+    "rule_desc" : "时间戳字段是获取增量数据的最佳方法，请为表定义时间戳字段。",
+    "rule_complexity": "simple",
+    "rule_cmd": "select t.table_name from information_schema.`TABLES` t where t.TABLE_SCHEMA ='@username@' and t.TABLE_NAME not in(select c.table_name from information_schema.`COLUMNS` c where (c.COLUMN_NAME like '%UPDATE%' OR c.COLUMN_NAME like '%CREATE%') and c.DATA_TYPE in ('datetime','date','timestamp','time') and c.table_schema ='@username@')",
+    "rule_name" : "TABLE_WITHOUT_TIMESTAMP",
+    "rule_status" : "ON",
+    "rule_summary" : "表没有定义时间戳字段",
+    "rule_type" : "OBJ",
+    "solution" : [ 
+        "添加时间字段(比如插入、更新的时间戳"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [ 
+        {
+            "parm_desc" : "字段数",
+            "parm_name" : "column_num",
+            "parm_value" : 40,
+            "parm_unit": ""
+        }
+    ],
+    "max_score" : 10,
+    "output_parms" : [ 
+        {
+            "parm_desc" : "表名",
+            "parm_name" : "title1"
+        }, 
+        {
+            "parm_desc" : "字段数",
+            "parm_name" : "title2"
+        }
+    ],
+    "rule_desc" : "表字段数过多，将造成记录过长，单页存储记录数减少。可考虑拆表处理。",
+    "rule_complexity": "simple",
+    "rule_cmd": "SELECT table_name,count(1) FROM information_schema.columns WHERE table_schema = '@username@' GROUP BY table_name HAVING count(1)>@column_num@",
+    "rule_name" : "TABLE_COLUMN_NUM",
+    "rule_status" : "ON",
+    "rule_summary" : "单表字段数过多",
+    "rule_type" : "OBJ",
+    "solution" : [ 
+        "表设计时尽量符合三范式来避免数据冗余,使用频率低的字段拆到另外一张表，必要时做表关联取数"
+    ],
+    "weight" : 1
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [ 
+        {
+            "parm_desc" : "字段长度(字节)",
+            "parm_name" : "record_length",
+            "parm_value" : "1000",
+            "parm_unit": ""
+        }
+    ],
+    "max_score" : 20,
+    "output_parms" : [ 
+        {
+            "parm_desc" : "表名",
+            "parm_name" : "title1"
+        }, 
+        {
+            "parm_desc" : "字段内容平均长度<br>(取自avg_row_length，有失真情况)",
+            "parm_name" : "title2"
+        }, 
+        {
+            "parm_desc" : "字段定义长度",
+            "parm_name" : "title3"
+        }
+    ],
+    "rule_desc" : "应控制单表定义长度，避免过长记录。",
+    "rule_complexity": "complex",
+    "rule_cmd": "default",
+    "rule_name" : "TABLE_RECORD_LENGTH",
+    "rule_status" : "ON",
+    "rule_summary" : "单表字段定义长度过长",
+    "rule_type" : "OBJ",
+    "solution" : [ 
+        "按需定义字段长度"
+    ],
+    "weight" : 2
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 20,
+    "output_parms" : [ 
+        {
+            "parm_desc" : "表名",
+            "parm_name" : "title1"
+        }
+    ],
+    "rule_desc" : "没有定义主键，MySQL会自动创建主键。这不是一种好的设计方法。",
+    "rule_complexity": "simple",
+    "rule_cmd": "select table_name from information_schema.tables where table_schema='@username@' and table_name not in(select table_name from information_schema.statistics where table_schema='@username@' and index_name='PRIMARY')",
+    "rule_name" : "TABLE_NO_DEF_PRIMARYKEY",
+    "rule_status" : "ON",
+    "rule_summary" : "表没有定义主键",
+    "rule_type" : "OBJ",
+    "solution" : [ 
+        "必须定义主键"
+    ],
+    "weight" : 5
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 20,
+    "output_parms" : [ 
+        {
+            "parm_desc" : "类别",
+            "parm_name" : "title1"
+        }, 
+        {
+            "parm_desc" : "对象名",
+            "parm_name" : "title2"
+        }, 
+        {
+            "parm_desc" : "依赖表",
+            "parm_name" : "title3"
+        }
+    ],
+    "rule_desc" : "存储过程、函数、触发器等都将消耗数据库的计算能力，建议通过应用层保证数据约束。",
+    "rule_complexity": "simple",
+    "rule_cmd": "select 'TRIGGER',trigger_name,event_object_table from information_schema.triggers where event_object_schema='@username@' union all (select type,specific_name,''from mysql.proc where db='@username@' order by type)",
+    "rule_name" : "EXIST_FUNC_PROC_TRIGGER",
+    "rule_status" : "ON",
+    "rule_summary" : "单表存在函数、存储过程、触发器",
+    "rule_type" : "OBJ",
+    "solution" : [ 
+        "用应用端程序实现将存储过程、函数、触发器"
+    ],
+    "weight" : 5
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [ 
+        {
+            "parm_desc" : "表大小(GB)",
+            "parm_name" : "table_size",
+            "parm_value" : 10,
+            "parm_unit": "GB"
+        }
+    ],
+    "max_score" : 10,
+    "output_parms" : [ 
+        {
+            "parm_desc" : "表名称",
+            "parm_name" : "title1"
+        }, 
+        {
+            "parm_desc" : "表大小(GB)",
+            "parm_name" : "title2"
+        }
+    ],
+    "rule_desc" : "表的规模过大，将影响表的访问效率、增加维护成本等。常见的解决方案就是使用分区表，将大表转换为分区表。对于大表的访问，可采取分片方式处理。",
+    "rule_name" : "BIG_TABLE_BY_SIZE",
+    "rule_complexity": "complex",
+    "rule_cmd": "default",
+    "rule_status" : "ON",
+    "rule_summary" : "超过指定规模且没有分区的表",
+    "rule_type" : "OBJ",
+    "solution" : [ 
+        "1.建议分库，分表，分区", 
+        "2.历史数据归档"
+    ],
+    "weight" : 1
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [ 
+        {
+            "parm_desc" : "表个数",
+            "parm_name" : "table_size",
+            "parm_value" : 5000,
+            "parm_unit": ""
+        }
+    ],
+    "max_score" : 1,
+    "output_parms" : [ 
+        {
+            "parm_desc" : "库名称",
+            "parm_name" : "title1"
+        }, 
+        {
+            "parm_desc" : "数据表个数",
+            "parm_name" : "title2"
+        }
+    ],
+    "rule_desc" : "单库数据表过多，将影响整体性能。必要时，进行业务逻辑的垂直拆分。",
+    "rule_name" : "BIG_SCHEMA_BY_TABLE_NUM",
+    "rule_complexity": "complex",
+    "rule_cmd": "default",
+    "rule_status" : "ON",
+    "rule_summary" : "单库数据表过多",
+    "rule_type" : "OBJ",
+    "solution" : [ 
+        "1.建议分库，分表，分区", 
+        "2.历史数据归档"
+    ],
+    "weight" : 1
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [ 
+        {
+            "parm_desc" : "数据量规模",
+            "parm_name" : "row_num",
+            "parm_value" : 20000000,
+            "parm_unit": ""
+        }
+    ],
+    "max_score" : 10,
+    "output_parms" : [ 
+        {
+            "parm_desc" : "表(分区)名称",
+            "parm_name" : "title1"
+        }, 
+        {
+            "parm_desc" : "记录数",
+            "parm_name" : "title2"
+        }
+    ],
+    "rule_desc" : "单表(分区)数据表过多，将影响整体性能。必要时，进行分库、分表或定期清理、归档数据。",
+    "rule_complexity": "simple",
+    "rule_cmd": "select table_name,table_rows from information_schema.tables where table_schema='@username@' and CREATE_OPTIONS<>'partitioned' and table_rows>@row_num@ union all select concat(table_name,':',partition_name),table_rows from information_schema.partitions where table_schema='@username@' and table_name not in (select table_name from information_schema.tables where table_schema='@username@' and CREATE_OPTIONS<>'partitioned') and table_rows>@row_num@",
+    "rule_name" : "BIG_TABLE_BY_ROW_NUM",
+    "rule_status" : "ON",
+    "rule_summary" : "单表(分区)数据量过大",
+    "rule_type" : "OBJ",
+    "solution" : [ 
+        "1.建议分库，分表，分区", 
+        "2.历史数据归档"
+    ],
+    "weight" : 1
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [ 
+        {
+            "parm_desc" : "选择率百分比<br>(接近100最好)",
+            "parm_name" : "selectivity",
+            "parm_value" : 0.001,
+            "parm_unit": ""
+        }
+    ],
+    "max_score" : 10,
+    "output_parms" : [ 
+        {
+            "parm_desc" : "表名",
+            "parm_name" : "title1"
+        }, 
+        {
+            "parm_desc" : "索引名",
+            "parm_name" : "title2"
+        }, 
+        {
+            "parm_desc" : "索引唯一值数量",
+            "parm_name" : "title3"
+        }, 
+        {
+            "parm_desc" : "表记录数",
+            "parm_name" : "title4"
+        }, 
+        {
+            "parm_desc" : "索引选择率(~100%，越高越好)",
+            "parm_name" : "title5"
+        }
+    ],
+    "rule_desc" : "索引选择率不高，将导致索引低效，请调整索引字段。",
+    "rule_cmd": "default",
+    "rule_complexity": "complex",
+    "rule_name" : "INDEX_SELECTIVITY",
+    "rule_status" : "ON",
+    "rule_summary" : "索引选择率不高",
+    "rule_type" : "OBJ",
+    "solution" : [ 
+        "调整索引字段，索引是否合理"
+    ],
+    "weight" : 1
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [],
+    "max_score" : 20,
+    "output_parms" : [ 
+        {
+            "parm_desc" : "表名称",
+            "parm_name" : "title1"
+        }, 
+        {
+            "parm_desc" : "外键名",
+            "parm_name" : "title2"
+        }
+    ],
+    "rule_desc" : "外键资源将消耗数据库的计算能力，建议通过应用层保证数据约束。",
+    "rule_complexity": "simple",
+    "rule_cmd": "select table_name,constraint_name from information_schema.table_constraints where CONSTRAINT_SCHEMA='@username@' and table_schema='@username@' and constraint_type='FOREIGN KEY'",
+    "rule_name" : "TABLE_EXIST_FOREIGN_KEY",
+    "rule_status" : "ON",
+    "rule_summary" : "单表存在外键",
+    "rule_type" : "OBJ",
+    "solution" : [ 
+        "应用程序实现外键约束，删除表的外键约束"
+    ],
+    "weight" : 5
+}
+{
+    "db_type" : "mysql",
+    "exclude_obj_type" : "",
+    "input_parms" : [ 
+        {
+            "parm_desc" : "索引数量",
+            "parm_name" : "index_num",
+            "parm_value" : 7,
+            "parm_unit": ""
+        }
+    ],
+    "max_score" : 10,
+    "output_parms" : [ 
+        {
+            "parm_desc" : "表名称",
+            "parm_name" : "title1"
+        }, 
+        {
+            "parm_desc" : "索引数量",
+            "parm_name" : "title2"
+        }
+    ],
+    "rule_desc" : "单表索引数量过多，不仅维护成本高，而且占用更多的空间。",
+    "rule_complexity": "simple",
+    "rule_cmd": "select * from (select table_name,count(distinct index_name) cnt from information_schema.STATISTICS where table_schema='@username@' and index_name<>'PRIMARY' group by table_name) v where cnt>@index_num@",
+    "rule_name" : "BIG_TABLE_BY_INDEX_NUM",
+    "rule_status" : "ON",
+    "rule_summary" : "单表索引数量过多",
+    "rule_type" : "OBJ",
+    "solution" : [ 
+        "构建战略性索引结构，不要针对每个需求都通过创建索引解决"
+    ],
+    "weight" : 2
+}
+{
+    "db_type": "O",
+    "exclude_obj_type": [
+        "SQL_ID"
+    ],
+    "input_parms": [
+        {
+            "parm_desc": "相似sql的数量",
+            "parm_name": "sql_no_bind_count",
+            "parm_value": 100,
+            "parm_unit": ""
+        }
+    ],
+    "max_score": 10,
+    "obj_info_type": "",
+    "output_parms": [
+        {
+            "parm_name": "SQL_TEXT",
+            "parm_desc": "SQL_TEXT"
+        },
+        {
+            "parm_desc": "SQL_FULLTEXT",
+            "parm_name": "SQL_FULLTEXT"
+        },
+        {
+            "parm_desc": "no_bind_sql_sum",
+            "parm_name": "SUM"
+        }
+    ],
+    "rule_complexity": "simple",
+    "rule_cmd": "db.@sql@.find({\"SUM\":{$gt:@sql_no_bind_count@},\"USERNAME\":\"@username@\",\"ETL_DATE\":\"@etl_date@\"}).forEach(function(x){db.@tmp@.save({\"USERNAME\":x.USERNAME,\"SQL_ID\":x.SQL_ID,\"SUM\":x.SUM,\"SQL_TEXT_DETAIL\":x.SQL_TEXT_DETAIL,\"SQL_TEXT\":x.SQL_TEXT});})",
+    "rule_desc": "未使用绑定变量",
+    "rule_name": "SQL_NO_BIND",
+    "rule_status": "ON",
+    "rule_summary": "未使用绑定变量",
+    "rule_type": "SQLSTAT",
+    "solution": [
+        "强选择性谓词使用绑定变量写法"
+    ],
+    "weight": 0.1
+}

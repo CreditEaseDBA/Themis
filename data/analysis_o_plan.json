@@ -1,0 +1,13 @@
+{
+    "module": "analysis",
+    "type": "SQLPLAN",
+    "capture_date": "2017-02-23",
+    "username": "schema",
+    "create_user": "SYSTEM",
+    "sid": "cedb",
+    "db_type": "O",
+    "rule_type": "SQLPLAN",
+    "rule_status": "ON",
+    "task_ip": "127.0.0.1",
+    "task_port": 1521
+}

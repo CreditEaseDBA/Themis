@@ -1,0 +1,10 @@
+# .gitignore_blobal
+*.pyc
+.DS_Store
+.DS_Store?
+*.swp
+*.bak
+rule_analysis/review_test/*
+rule/extend/*
+rule/sqlplan/*
+sftp-config.json

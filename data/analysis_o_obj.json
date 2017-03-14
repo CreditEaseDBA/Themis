@@ -1,0 +1,13 @@
+{
+    "module": "analysis",
+    "type": "OBJ",
+    "db_server": "127.0.0.1",
+    "db_port": 1521,
+    "username": "schema",
+    "db_type": "O",
+    "rule_type": "OBJ",
+    "rule_status": "ON",
+    "create_user": "system",
+    "task_ip": "127.0.0.1",
+    "task_port": 1521
+}
