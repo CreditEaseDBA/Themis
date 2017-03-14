@@ -69,10 +69,13 @@ file:///home/themis-test/software指定安装包的位置
 
 ### 联系方式
 
-EMail：sqlreview_themis@126.com
+EMail：
+    sqlreview_themis@126.com
 
 微信群：
+
 ![微信](data/img/weixin.png)
 
 qq群：
+
 ![qq](data/img/qq.png)
