@@ -35,7 +35,7 @@ Themis，是宜信公司DBA团队开发的一款数据库审核产品。可帮�
 
 安装依赖包：
     
-    cd /home/themis-test/themis
+    cd /home/themis-test/Themis
     pip install -r requirement.txt
 
 单独安装PyH==0.1，参考[PyH](https://github.com/hanxiaomax/pyh)
@@ -50,7 +50,7 @@ Themis，是宜信公司DBA团队开发的一款数据库审核产品。可帮�
 
 运行命令
 
-    cd /home/themis-test/themis
+    cd /home/themis-test/Themis
     supervisord -c script/supervisord.conf
 
 访问 http://ip:7000/ 是审核平台的管理页面
