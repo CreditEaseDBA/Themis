@@ -10,7 +10,7 @@ Themis，是宜信公司DBA团队开发的一款数据库审核产品。可帮�
 导入规则
 
     mongoimport -h 127.0.0.1 --port 27017 -u sqlreview -p password -d sqlreview -c rule --file script/rule.json
-根据实际情况配置账号密码，建议-d选项使用sqlreview
+根据实际情况配置账号密码，建议-d选项使用sqlreview,-c使用默认的rule
 
 新建用户
 
