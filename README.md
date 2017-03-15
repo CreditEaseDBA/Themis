@@ -53,7 +53,7 @@ Themis，是宜信公司DBA团队开发的一款数据库审核产品。可帮�
     cd /home/themis-test/Themis
     supervisord -c script/supervisord.conf
 
-访问 http://ip:7000/ 是审核平台的管理页面
+访问 http://ip:7000/ 是审核平台的管理页面，在这里暂时只能对对象类规则进行审核，其他类规则需要采集数据后才可以进行审核。
 
 注：
 针对上面安装virtualenv和依赖包时网络不通的情况可以从[此处下载](https://pan.baidu.com/s/1o7AIWlG),提取码 3sy3，下载后解压然后运行下面的命令安装依赖包
