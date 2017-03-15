@@ -7,6 +7,8 @@ Themis，是宜信公司DBA团队开发的一款数据库审核产品。可帮�
 
 ### 快速开始  
 
+注：mongo、redis、mysql都需要预先安装，mongo用来存储数据，redis用来作为celery的调度队列，mysql用来存储pt-query-digest的分析结果
+
 导入规则
 
     mongoimport -h 127.0.0.1 --port 27017 -u sqlreview -p password -d sqlreview -c rule --file script/rule.json
