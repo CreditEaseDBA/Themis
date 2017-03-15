@@ -13,7 +13,8 @@ Themis，是宜信公司DBA团队开发的一款数据库审核产品。可帮�
 根据实际情况配置账号密码，建议-d选项使用sqlreview,-c使用默认的rule
 
 新建用户
-注：下面的操作除了安装virtualenv在root用户下操作，其他都建议在themis-test用户下操作。
+
+注：下面的操作除了安装virtualenv在root用户下操作，其他都建议在themis-test用户下操作。celery在root用户启动时需要增加特殊配置。
 
     adduser themis-test
     su - themis-test
