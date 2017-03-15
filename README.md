@@ -26,7 +26,8 @@ Themis，是宜信公司DBA团队开发的一款数据库审核产品。可帮�
 安装virtualenv最新版[链接](https://pypi.python.org/simple/virtualenv/)
 
 创建虚拟环境：
-
+    
+    cd /home/themis-test
     virtualenv python-project --python=python2.7
 
 初始化虚拟环境
