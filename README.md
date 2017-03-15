@@ -7,7 +7,7 @@ Themis，是宜信公司DBA团队开发的一款数据库审核产品。可帮�
 
 ### 快速开始  
 
-注：mongo、redis、mysql都需要预先安装，mongo用来存储数据，redis用来作为celery的调度队列，mysql用来存储pt-query-digest的分析结果
+注：mongo、redis、mysql都需要预先安装，mongo用来存储数据，redis用来作为celery的调度队列，mysql用来存储pt-query-digest的分析结果，如果大家对python不是很熟悉，强烈建议按照下面的步骤安装
 
 导入规则
 
