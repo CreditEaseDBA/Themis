@@ -7,11 +7,11 @@ Themis，是宜信公司DBA团队开发的一款数据库审核产品。可帮�
 
 ### 快速开始  
 
-注：mongo、redis、mysql都需要预先安装，mongo用来存储数据，redis用来作为celery的调度队列，mysql用来存储pt-query-digest的分析结果，如果大家对python不是很熟悉，强烈建议按照下面的步骤安装
+注：mongo、redis、mysql都需要预先安装，mongo用来存储数据，redis用来作为celery的调度队列，mysql用来存储pt-query-digest的分析结果，如果大家对python不是很熟悉，强烈建议按照下面的步骤安装，关于mongo的启动，在测试环境建议直接使用root用户用mongod启动不要使用认证,生产环境可以加上认证，加上认证后用户连接需要授权，具体的用户授权方式请自行搜索
 
 导入规则
 
-    mongoimport -h 127.0.0.1 --port 27017 -u sqlreview -p password -d sqlreview -c rule --file script/rule.json
+    mongoimport -h 127.0.0.1 --port 27017 -d sqlreview -c rule --file script/rule.json
 根据实际情况配置账号密码，建议-d选项使用sqlreview,-c使用默认的rule
 
 新建用户
@@ -51,6 +51,14 @@ Themis，是宜信公司DBA团队开发的一款数据库审核产品。可帮�
 
 
 配置settings.py文件包括oracle、mysql、redis、mongo、pt-query-digest存储数据的帐号密码
+
+配置mongo
+    
+    MONGO_SERVER = "127.0.0.1"
+    MONGO_PORT = 27017
+    MONGO_USER = ""
+    MONGO_PASSWORD = ""
+    MONGO_DB = "sqlreview"
 
 
 运行命令
