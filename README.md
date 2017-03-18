@@ -77,6 +77,8 @@ Themis，是宜信公司DBA团队开发的一款数据库审核产品。可帮�
 
 file:///home/themis-test/software指定安装包的位置
 
+如有问题可以参考: https://tuteng.gitbooks.io/themis/content/chang-jian-wen-ti.html
+
 ### WIKI
 
 https://tuteng.gitbooks.io/themis/content/ 
