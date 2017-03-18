@@ -5,7 +5,7 @@
 # ipaddres : port -> key
 ORACLE_ACCOUNT = {
     # oracle
-    "127.0.0.1:1521": ["cedb", "system", "password"]
+    # "127.0.0.1:1521": ["cedb", "system", "password"]
 }
 
 # set mysql ipaddress, port, account, password

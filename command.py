@@ -28,7 +28,7 @@ from rule_analysis.themis import Themis
 from rule_analysis.db.db_operat import DbOperat
 from rule_analysis.db.mongo_operat import MongoOperat
 from capture.sql_obj_info import CaptureObj
-from capture.sql_other_info import CaptureOther
+# from capture.sql_other_info import CaptureOther
 from task_export.export import export_task
 from webui.main import run_server
 
@@ -120,6 +120,7 @@ class Command(object):
         elif flag_type == "OTHER":
             startdate = " ".join([capture_date, "00:00:00"])
             stopdate = " ".join([capture_date, "23:59:00"])
+            from capture.sql_other_info import CaptureOther
             CaptureOther(self.mongo_client, db_client.get_db_cursor(),
                          ipaddress=host, sid=sid, etl_date=capture_date,
                          startdate=startdate, stopdate=stopdate).run()

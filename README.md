@@ -9,6 +9,8 @@ Themis，是宜信公司DBA团队开发的一款数据库审核产品。可帮�
 
 注：mongo、redis、mysql都需要预先安装，mongo用来存储数据，redis用来作为celery的调度队列，mysql用来存储pt-query-digest的分析结果，如果大家对python不是很熟悉，强烈建议按照下面的步骤安装，关于mongo的启动，在测试环境建议直接使用root用户用mongod启动不要使用认证,生产环境可以加上认证，加上认证后用户连接需要授权，具体的用户授权方式请自行搜索
 
+在本分支下可以不用安装cx_Oracle,即只针对mysql数据库进行各个维度的审核，在settings.py文件中不需要配置ORACLE_ACCOUNT帐号，其他的按文档流程进行
+
 导入规则
 
     mongoimport -h 127.0.0.1 --port 27017 -d sqlreview -c rule --file script/rule.json
@@ -36,7 +38,6 @@ Themis，是宜信公司DBA团队开发的一款数据库审核产品。可帮�
 
     source /home/themis-test/python-project/bin/activate
 
-安装cx_Oracle的依赖项，[参考](http://www.jianshu.com/p/pKz5K7)
 
 安装依赖包：
     
