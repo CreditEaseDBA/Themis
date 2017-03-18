@@ -25,7 +25,7 @@ Themis，是宜信公司DBA团队开发的一款数据库审核产品。可帮�
 
 下载代码
 
-    git clone https://github.com/CreditEaseDBA/Themis
+    git clone -b dev https://github.com/CreditEaseDBA/Themis
 
 安装virtualenv最新版[链接](https://pypi.python.org/simple/virtualenv/)
 
