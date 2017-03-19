@@ -41,6 +41,14 @@ Themis，是宜信公司DBA团队开发的一款数据库审核产品。可帮�
 安装cx_Oracle的依赖项，[参考](http://www.jianshu.com/p/pKz5K7)
 
 安装依赖包：
+
+对于使用python2.6的用户，请安装[importlib-1.0.3.tar.gz](https://pypi.python.org/simple/importlib/)
+
+    tar -zxvf importlib-1.0.3.tar.gz
+    cd importlib-1.0.3
+    python setup.py install
+
+安装其他依赖：
     
     cd /home/themis-test/Themis
     pip install -r requirement.txt
