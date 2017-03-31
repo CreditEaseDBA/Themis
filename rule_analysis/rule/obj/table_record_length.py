@@ -25,7 +25,7 @@ def f_get_byte_length(data_type, character_octet_length, numeric_precision, nume
         'text': character_octet_length,
         'mediumblob': character_octet_length,
         'mediumtext': character_octet_length,
-        'logngblob': character_octet_length,
+        'longblob': character_octet_length,
         'longtext': character_octet_length,
         'enum': character_octet_length,
         'set': character_octet_length
