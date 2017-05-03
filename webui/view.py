@@ -505,9 +505,8 @@ class SqlReviewTaskRuleDetailInfo(BaseHandler):
                 for data in rule_info["input_parms"]:
                     title.append([data["parm_value"], data["parm_desc"]])
                 for data in results[rule_name]["records"]:
-                    temp = []
-                    temp.extend(data)
-                    records.append(temp)
+                    if data not in records:
+                        records.append(data)
             flag = rule_info["rule_type"]
         elif rule_info["rule_type"] in ["SQLPLAN", "SQLSTAT"]:
             for key in results[rule_name].keys():
