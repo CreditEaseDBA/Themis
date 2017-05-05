@@ -3544,7 +3544,7 @@
     "input_parms" : [ 
         {
             "parm_desc" : "inlist元素个数",
-            "parm_name" : "inlist_num",
+            "parm_name" : "in_list_num",
             "parm_value" : 20,
             "parm_unit": ""
         }
