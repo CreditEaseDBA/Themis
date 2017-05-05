@@ -259,7 +259,7 @@ class SqlReviewGetStruct(BaseHandler):
             db_type = "O"
         else:
             db_type = "mysql"
-        if flag.upper() not in ["OBJ", "SQLPLAN", "SQLSTAT", "SQLTEXT"]:
+        if flag.upper() not in ["OBJ", "SQLPLAN", "SQLSTAT", "TEXT"]:
             raise APIError(u"规则类型不正确", 30058)
         records = self.mongo_client.get_collection("rule").find(
             {"rule_type": flag.upper(), "db_type": db_type}
