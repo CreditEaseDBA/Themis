@@ -62,8 +62,8 @@ def execute_rule(**kwargs):
             character_octet_length = rec_col[2]
             numeric_precision = rec_col[3]
             numeric_scale = rec_col[4]
-	    if tmp_column_length:
-            	tmp_column_length = tmp_column_length + f_get_byte_length(data_type, character_octet_length, numeric_precision, numeric_scale)
+            if tmp_column_length:
+                tmp_column_length = tmp_column_length + f_get_byte_length(data_type, character_octet_length, numeric_precision, numeric_scale)
 
         if tmp_column_length > record_length:
             return_tabs.append([rec_tab[0], rec_tab[1], tmp_column_length])
