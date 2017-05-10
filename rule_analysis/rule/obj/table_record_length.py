@@ -30,7 +30,7 @@ def f_get_byte_length(data_type, character_octet_length, numeric_precision, nume
         'enum': character_octet_length,
         'set': character_octet_length
     }
-    return case_data_type.get(data_type)
+    return case_data_type.get(data_type, 0)
 
 
 def execute_rule(**kwargs):
