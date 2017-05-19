@@ -20,4 +20,4 @@ def execute_rule(**kwargs):
     results = [[value[0], value[1], value[2], value[3], float(value[4])] for value in records]
     if (len(records) * weight) > max_score:
         return results, float("%0.2f" % max_score)
-    return records, float("%0.2f" % (len(records) * weight))
+    return results, float("%0.2f" % (len(results) * weight))
