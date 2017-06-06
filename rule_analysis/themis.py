@@ -121,7 +121,7 @@ class Themis(object):
         result = self.mys.get_sql_info(
             self.startdate, self.stopdate, self.username, hostname)
         if not result:
-            return False
+            return False, 0
         # 回库查询获取执行计划
         self.mys.get_sql_plan(user, passwd)
         if rule_complexity == "simple":
