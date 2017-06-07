@@ -2125,7 +2125,7 @@
         }
     ],
     "rule_complexity": "simple",
-    "rule_cmd" : "db.planitem.find({\"schemas\":\"@schema_name@\",\"access_type\" : \"ALL\",\"rows\" : {\"$gt\":1},\"citem_type\":{\"$ne\":\"materialized_from_subquery\"}}).forEach(function(x){db.sqlinfo.find({checksum:x.checksum}).forEach(function(y){db.@tmp@.save({\"checksum\" :y.checksum,\"ts_cnt\" :y.ts_cnt,\"query_time_avg\" :y.query_time_avg,\"rows_sent_avg\" :y.rows_sent_avg,\"index_ratio\" :y.index_ratio,\"rows\":x.rows})})})",
+    "rule_cmd" : "db.planitem.find({\"schemas\":\"@schema_name@\",\"access_type\" : \"ALL\",\"$or\": [{\"rows\" : {\"$gt\":1}}, {\"rows_examined_per_scan\": {\"$gt\":1}}],\"citem_type\":{\"$ne\":\"materialized_from_subquery\"}}).forEach(function(x){db.sqlinfo.find({checksum:x.checksum}).forEach(function(y){if(x.rows){rows=x.rows}else{rows=x.rows_examined_per_scan}db.@tmp@.save({\"checksum\" :y.checksum,\"ts_cnt\" :y.ts_cnt,\"query_time_avg\" :y.query_time_avg,\"rows_sent_avg\" :y.rows_sent_avg,\"index_ratio\" :y.index_ratio,\"rows\":rows})})})",
     "rule_desc" : "全表扫描",
     "rule_name" : "TABLE_FULL_SCAN",
     "rule_status" : "ON",
