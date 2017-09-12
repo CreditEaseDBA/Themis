@@ -40,26 +40,26 @@ class BaseHandler(tornado.web.RequestHandler):
         return self.config.get("celery")
 
 
-class SqlReRuleSetIndex(tornado.web.RequestHandler):
+class SqlReRuleSetIndex(BaseHandler):
 
     def get(self):
         self.render("rule_set.html")
 
 
-class RuleSimpleAdditoin(tornado.web.RequestHandler):
+class RuleSimpleAdditoin(BaseHandler):
 
     def get(self):
         self.render("rule_simple_add.html")
 
 
-class RuleComplexAddition(tornado.web.RequestHandler):
+class RuleComplexAddition(BaseHandler):
 
     def get(self):
         self.render("rule_complex_add.html")
 
 
 
-class RuleAddition(tornado.web.RequestHandler):
+class RuleAddition(BaseHandler):
 
     @temRes
     def post(self):
@@ -100,7 +100,7 @@ class RuleAddition(tornado.web.RequestHandler):
             return {"errcode": 30060, "message": str(e)}
 
 
-class RuleUpload(tornado.web.RequestHandler):
+class RuleUpload(BaseHandler):
 
     @temRes
     def post(self):
@@ -139,7 +139,7 @@ class SqlReRuleSetInfoIndex(BaseHandler):
         self.render("rule_set_info.html", ipaddress=result_list)
 
 
-class SqlReviewTaskIndex(tornado.web.RequestHandler):
+class SqlReviewTaskIndex(BaseHandler):
 
     def get(self):
         self.render("task_info.html")
